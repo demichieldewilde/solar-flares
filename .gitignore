@@ -1,0 +1,15 @@
+# Allow all files except .fits, .pdf, and .png
+!**/*
+!*.py
+!*.ipynb  # Add other file types you want to track if needed
+
+
+# Exclude .fits, .pdf, and .png files recursively
+*.fits
+*.pdf
+*.png
+*.idlsave
+*.npy
+*.txt
+*.sav
+*.doc
