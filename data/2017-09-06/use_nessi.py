@@ -463,15 +463,15 @@ class SST_data():
                 print(f"The point at continuum has already been disgarded. Got a {np.shape(spectrum)} array which should have been a {np.shape(self.datacube)[0]}-array" )       
         return spectrum
     
-    def set_mu(self, theor_line, number_of_last_frame=None, alternative_filename=None):
+    def set_mu(self, theor_line, number_of_last_frame=None, alternative_filename=None, shift=(0,0)):
         filename = self.filename
         if alternative_filename is not None:
             filename = alternative_filename
         if number_of_last_frame is None:
             number_of_last_frame = self._number_of_frames - 1
-        mu1 = give_mu_contourplot(filename, over=self)
+        mu1 = give_mu_contourplot(filename, over=self, shift=shift, save=True, save_name=self.name_of_line)
         mu2 = give_mu_contourplot(filename, over=self,
-                                    timeFrame=number_of_last_frame)
+                                    timeFrame=number_of_last_frame, shift=shift)
         self.mu = (mu1 + mu2) / 2
         print('We take average mu to be ', self.mu)
         fix_mu_theor(theor_line, self.mu)
@@ -1036,7 +1036,7 @@ class SST_data():
         plt.show()
 
 # ========================================================================
-def get_extent(filename, timeFrame=0):
+def get_extent(filename, timeFrame=0, shift=(0,0)):
     """
     Read the coordinates of the corners to use them with imshow/extent
 
@@ -1062,10 +1062,10 @@ def get_extent(filename, timeFrame=0):
     """
     io = f.open(filename)
     return [
-        io[1].data[0][0][timeFrame, 0, 0, 0, 0],
-        io[1].data[0][0][timeFrame, 0, 1, 1, 0],
-        io[1].data[0][0][timeFrame, 0, 0, 0, 1],
-        io[1].data[0][0][timeFrame, 0, 1, 1, 1],
+        io[1].data[0][0][timeFrame, 0, 0, 0, 0] + shift[0],
+        io[1].data[0][0][timeFrame, 0, 1, 1, 0] + shift[0],
+        io[1].data[0][0][timeFrame, 0, 0, 0, 1] + shift[1],
+        io[1].data[0][0][timeFrame, 0, 1, 1, 1] + shift[1],
     ]
 
 def calculate_mu(x,y, radius=959.63):
@@ -1080,7 +1080,7 @@ def calculate_mu(x,y, radius=959.63):
     '''
     return (1-(x**2 + y**2)/radius**2)**0.5
 
-def get_mu_mesh(filename, timeFrame=0, radius=959.63, shape=None):
+def get_mu_mesh(filename, timeFrame=0, radius=959.63, shape=None, shift=(0,0)):
     '''
     Creates a mesh of mu values with as many pixels as the observation. 
     '''
@@ -1102,8 +1102,8 @@ def get_mu_mesh(filename, timeFrame=0, radius=959.63, shape=None):
         raise e
 
 
-    x = np.linspace(fxp[0], fxp[1], xp)
-    y = np.linspace(fyp[0], fyp[1], yp)
+    x = np.linspace(fxp[0], fxp[1], xp) + shift[0]
+    y = np.linspace(fyp[0], fyp[1], yp) + shift[1]
 
     print(f"The frame is centered at {((fxp[0]+ fxp[1])/2,(fyp[0]+ fyp[1])/2)}")
 
@@ -1112,14 +1112,14 @@ def get_mu_mesh(filename, timeFrame=0, radius=959.63, shape=None):
     MU = calculate_mu(X,Y, radius=radius)
     return MU, X, Y
 
-def give_mu_contourplot(filename, timeFrame=0, over=None):
+def give_mu_contourplot(filename, timeFrame=0, over=None, shift=(0,0), save=False, save_name=""):
     '''
     Creates a contourplot of the mu values
     if over is not None but a sst_data class object then the countour plot is shown over the specific frame
     '''
     shape = np.shape(over.datacube)[3:5] if over is not None else None
-    MU, X, Y = get_mu_mesh(filename, timeFrame, shape=shape)
-    extent = get_extent(filename, timeFrame)
+    MU, X, Y = get_mu_mesh(filename, timeFrame, shape=shape, shift=shift)
+    extent = get_extent(filename, timeFrame, shift=shift)
 
     fig, ax = plt.subplots()
     if over is not None:
@@ -1133,9 +1133,16 @@ def give_mu_contourplot(filename, timeFrame=0, over=None):
     ax.set_title(r'Contour plot of the $\mu$ values.')
     ax.set_xlabel('x-coordinate [arcsec]')
     ax.set_ylabel('y-coordinate [arcsec]')
-
+    
+    if save:
+        # Save arrays together
+        np.savez(f"line_data/contourdata{save_name}.npz", MU, X[0], Y[:,0], over.current_ccp)
+        print("succesfully saved.")
+    
     if over is not None:
         return av_mu
+    
+
 
 
 # ========================================================================
@@ -1358,13 +1365,31 @@ def ax_contourplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar=
     ax2.tick_params(axis='y', labelcolor=color)
     return pcm
 
-def noise_plots(X,Y,Z, x, line, sigmas, seperate_colorbar=True, logscale=False):
+from scipy.interpolate import griddata
+from scipy.stats import norm
+
+def interpolate_and_add_noise(X, Y, Z, k=100, sigmas=[1]):
+    # Create the new grid
+    x_new = np.linspace(np.min(X), np.max(X), k)
+    y_new = np.linspace(np.min(Y), np.max(Y), k)
+    X_new, Y_new = np.meshgrid(x_new, y_new)
+
+    # Interpolate Z values on the new grid
+    Z_new = griddata((X.ravel(), Y.ravel()), Z.ravel(), (X_new, Y_new), method='cubic')
+
+    # Add normally distributed noise
+    Z_noisy = np.array([Z_new + norm.rvs(scale=sigmas[i], size=Z_new.shape)  for i in range(len(sigmas))])
+
+    return X_new, Y_new, Z_noisy
+
+def noise_plots(X,Y,Z, x, line, sigmas, seperate_colorbar=True, logscale=False, k=100):
     n = len(sigmas)
     rows = ((n-1)//3)+1
     cols = 3
 
-    Z_noise=np.array([Z+get_noise(shape=np.shape(Z), mu=0, sigma=sigmas[i])  for i in range(n)])
-
+    X, Y, Z_noise=interpolate_and_add_noise(X,Y,Z, k, sigmas)
+    x = X[0]
+    print(x, Z_noise)
     lim = np.max([-np.min(Z_noise), np.max(Z_noise)])
 
 
