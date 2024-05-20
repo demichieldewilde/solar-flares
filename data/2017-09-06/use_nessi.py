@@ -1798,7 +1798,7 @@ def correct_flare_start(time, name):
     return time - Dt
 
 def full_path(name):
-    if isinstance(name, list) and len(name) > 0 and isinstance(n[0], str):
+    if isinstance(name, list) and len(name) > 0 and isinstance(name[0], str):
         name = name[0]
     if '17a' in name:
         return "D:/solar flares/data/2017-09-10" 

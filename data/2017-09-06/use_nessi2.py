@@ -147,7 +147,7 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=True, area_factor
 def get_Harps(name_of_line):
     # Harps starts at 8:57 and and at 14:33 UT
     # first flare starts exactly at 8:57 (X2.2) the second at 11:53 (X9.3)
-    folder = "Harps/"
+    folder = "D:/solar flares/data/2017-09-06\Harps/"
     flare = np.load(f'{folder}Flux_corrected.npy')
 
     wav = np.load(f'{folder}Wavelength.npy')
