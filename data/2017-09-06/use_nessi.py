@@ -1759,26 +1759,27 @@ def save_for_further_analysis(sst_data, theor_line):
     np.save(filename,sst_data.TIME)
 
 
-def load_for_further_analysis(names_of_lines, full_path=''):
-
+def load_for_further_analysis(names_of_lines, full_path=None):
+    if full_path is None:
+        full_path = full_path(names_of_lines[0])
     data = {}
     for name in names_of_lines:
         
         # load FOV_spectrum
         filename = get_file_path_FOV(name, full_path=full_path)
-        data['FOV_'+name] = np.load(filename)
+        data[f'FOV_{name}'] = np.load(filename)
 
         # load quiet_sun profile
-        filename = get_file_path_line_data("quiet_sun_"+name, full_path=full_path)
-        data['quiet_sun_'+name] = np.load(filename)
+        filename = get_file_path_line_data(f"quiet_sun_{name}", full_path=full_path)
+        data[f'quiet_sun_{name}'] = np.load(filename)
 
         # load nessi best clv spectrum and full disk
-        filename = get_file_path_line_data("nessi_"+ name, full_path=full_path)
-        data['nessi_'+name] = np.load(filename)
-        
+        filename = get_file_path_line_data(f"nessi_{name}", full_path=full_path)
+        data[f'nessi_{name}'] = np.load(filename)
+
         # load time in minutes
-        filename = get_file_path_line_data("TIME_"+name, full_path=full_path)
-        data['TIME_'+name] = correct_flare_start(np.load(filename), name)
+        filename = get_file_path_line_data(f"TIME_{name}", full_path=full_path)
+        data[f'TIME_{name}'] = correct_flare_start(np.load(filename), name)
 
     return data
 
@@ -1808,5 +1809,7 @@ def full_path(name):
         return "D:\solar flares\data\\2019-05-06"
     elif "13" in name:
         return "D:\solar flares\data\\2013-06-30"
+    elif "15" in name:
+        return "D:\solar flares\data\\2015-06-24"
     else:
         raise FileNotFoundError(f'For the profided name {name} no full path was defined.')
