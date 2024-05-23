@@ -1700,9 +1700,9 @@ def make_opt_w_dir():
 def saves_As(name_of_line, A_area, A_wavl, Deltas):
     make_opt_w_dir()
     # save A_area, A_wavl, Deltas, ...
-    hulp_save_opt_w_data("A_area_"+name_of_line, A_area)
-    hulp_save_opt_w_data("A_wavl_"+name_of_line, A_wavl)
-    hulp_save_opt_w_data("Deltas_"+name_of_line, Deltas)
+    hulp_save_opt_w_data(f"A_area_{name_of_line}", A_area)
+    hulp_save_opt_w_data(f"A_wavl_{name_of_line}", A_wavl)
+    hulp_save_opt_w_data(f"Deltas_{name_of_line}", Deltas)
 
 def analyse_optimal_interval(sst_data, Deltas=np.arange(0, 3, 0.03), area_factor=(60**2/4/np.pi/959.63**2)):
     # if Deltas is None:
@@ -1744,20 +1744,19 @@ def save_for_further_analysis(sst_data, theor_line):
     sst_data.FOV_spectrum
 
     # save quiet_sun profile
-    filename = get_file_path_line_data("quiet_sun_"+sst_data.name_of_line)
+    filename = get_file_path_line_data(f"quiet_sun_{sst_data.name_of_line}")
     np.save(filename, np.array([sst_data._wavel, sst_data.quiet_spect/sst_data.scalar, sst_data.std_quiet_sun/sst_data.scalar]))
 
     # save nessi best clv spectrum and full disk
     # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
     theta = sst_data.theta_nessi_to_quiet_sun
 
-    filename = get_file_path_line_data("nessi_"+sst_data.name_of_line)
+    filename = get_file_path_line_data(f"nessi_{sst_data.name_of_line}")
     np.save(filename, np.array([theor_line.sst_wav+theta[0], theor_line.sst_dc*theta[2] + theta[1], theor_line.best_fit_clv]))
-    
-    # save time in minutes
-    filename = get_file_path_line_data("TIME_"+sst_data.name_of_line)
-    np.save(filename,sst_data.TIME)
 
+    # save time in minutes
+    filename = get_file_path_line_data(f"TIME_{sst_data.name_of_line}")
+    np.save(filename,sst_data.TIME)
 
 def load_for_further_analysis(names_of_lines, full_path=None):
     if full_path is None:
@@ -1784,19 +1783,32 @@ def load_for_further_analysis(names_of_lines, full_path=None):
     return data
 
 def correct_flare_start(time, name):
+    """Corrects the start of the flare
+
+    Args:
+        time (arr): the time from the sst data that starts at 0
+        name (string): name of the line
+
+    Returns:
+        arr: the time shifted for the correct start of te flare 
+            +Dt means that the observation started after the flare 
+            -Dt means that the observation started before
+    """
     if '19'in name:
         Dt = -7
     elif '13' in name:
-        Dt = 5
+        Dt = 5 #
     elif '9u' in name:
-        Dt = 7
+        Dt = 7 #
     elif "17" in name:
-        Dt = 3
+        Dt = 3 #
+    elif "15" in name:
+        Dt = -23.4 # 2015-06-24T14:49 - 15:12
     else:
         print("no time correction factor added.")
         Dt = 0
         
-    return time - Dt
+    return time + Dt
 
 def full_path(name):
     if isinstance(name, list) and len(name) > 0 and isinstance(name[0], str):
