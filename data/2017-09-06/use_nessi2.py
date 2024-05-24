@@ -134,7 +134,13 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=True, area_factor
     wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
 
     line = interp1d(wav_nessi, dc_nessi)(wav)
-    DFD = area_factor * DFOV 
+    # Correct normalization for area and mu-value (all intensities are normalized on the first wavelength)
+    #   -correction for area is area_factor
+    #   -correction factor for average vs quiet sun normalization is 1/(dc_nessi[0]*clv_nessi[0])
+    #   -correction factor for mu value is clv[0]/1
+    # thereby we have area_factor * 1/(dc_nessi[0]*clv_nessi[0]) * clv[0]/1 thus
+    DFD = area_factor * DFOV / dc_nessi[0]
+    print('the correction for the mu_value normalization is ', 1/dc_nessi[0])
     
     if add_noise:
         noise = np.random.normal(loc=0, scale=std[0], size=(DFD.shape))
@@ -142,8 +148,6 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=True, area_factor
 
     return wav, DFD, time, line, (std if add_noise else None)
     
-
-
 def get_Harps(name_of_line):
     # Harps starts at 8:57 and and at 14:33 UT
     # first flare starts exactly at 8:57 (X2.2) the second at 11:53 (X9.3)

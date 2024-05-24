@@ -521,7 +521,7 @@ class SST_data():
             else:
                 corr = self._wavel*0
         for p in range(numb):
-            ax.plot(self._wavel, self.datacube[frame,0, :, pixels[p][1], pixels[p][0]]+self.scalar*corr,color=colors[pixels[p][1]][pixels[p][0]]/255,
+            ax.plot(self._wavel, self.datacube[frame,0, :, pixels[p][1], pixels[p][0]]/self.scalar + corr,color=colors[pixels[p][1]][pixels[p][0]]/255,
                     label="pixel x="+str(pixels[p][0])+" y="+str(pixels[p][1]))
         if hasattr(self, 'line_lim'):
             ax.set_xlim(self.line_lim)
@@ -558,7 +558,7 @@ class SST_data():
                 for i in range(len(str(frame))+1):
                     s += '\r'
                 print(s, end=str(frame))
-                FOV_spectrum.append(self.frame_integrated_spect(frame)/self.scalar)
+                FOV_spectrum.append(self.frame_integrated_spect(frame))
 
             FOV_spectrum = np.array(FOV_spectrum)
             np.save(filename, FOV_spectrum)
@@ -644,12 +644,10 @@ class SST_data():
             if np.isnan(self.scalar):
                 print('This is a problem. The self.scalar is nan.')
                 # A scalar which will normalize the intensity
-                self.scalar = 0
+                self.scalar = 1
                 self.scalar = self.frame_integrated_spect(0)[0]
                 if np.isnan(self.scalar):
                     print('The problem is not fixed by renormalization.\nMake sure no other constants are nan in the definition of the scalar')
-
-
         else:
             self.frame_integrated_spect(0)
             self.check_scalar_not_nan
@@ -822,11 +820,11 @@ class SST_data():
 
         if np.any(np.isnan(self.zeros)):
             self.av_spect = self.disgard_cont_point(
-                np.array([np.nanmean(self.datacube[frame,0,i,ymin:ymax,xmin:xmax]) for i in range(len(self._wavel))]) + self.scalar*corr
+                np.array([np.nanmean(self.datacube[frame,0,i,ymin:ymax,xmin:xmax]) for i in range(len(self._wavel))]) / self.scalar +corr
                 )
         else:
             self.av_spect = self.disgard_cont_point(
-            np.array([np.average(self.datacube[frame,0,i,ymin:ymax,xmin:xmax],weights=R[ymin:ymax,xmin:xmax]) for i in range(len(self._wavel))]) + self.scalar*corr
+            np.array([np.average(self.datacube[frame,0,i,ymin:ymax,xmin:xmax],weights=R[ymin:ymax,xmin:xmax]) for i in range(len(self._wavel))]) / self.scalar + corr
             )
         if variation:
             npxl = (ymax-ymin)*(xmax-xmin) #number of pixels
@@ -849,7 +847,7 @@ class SST_data():
 
         fig, ax = plt.subplots(1,1, figsize=(5,5), sharey=False)
         ax.set_title("spectral lines of SST frame "+str(frame)+" in relative intensity ")
-        ax.plot(self._wavel, self.av_spect/self.scalar,color='red', label="sst averaged") # linewidth
+        ax.plot(self._wavel, self.av_spect,color='red', label="sst averaged") # linewidth
 
         # to give relative intensities
         if len(pixels) > 0:
@@ -944,7 +942,7 @@ class SST_data():
         # dY = np.where(theor_Ha.sst_wav<6563.8, 0.01, 10) + np.where(6561.8<theor_Ha.sst_wav, 0.01, 10)
         #To simulate a specific domain around the well we cam make the errors on the wings huge
 
-        data = [self._wavel,  self.quiet_spect / self.scalar,np.zeros(g)+0.001,np.zeros(g)+0.001]
+        data = [self._wavel,  self.quiet_spect, np.zeros(g)+0.001,np.zeros(g)+0.001]
         if initial_values is None:
             initial_values = np.array([-0.215, -0.111, 1.26])
 
@@ -975,8 +973,8 @@ class SST_data():
 
         ax[0].set_title("spectral lines of SST frame "+str(frame)+" H\u03B1 with normalized intensity")
         self.frame_integrated_spect(frame)
-        ax[0].plot(self._wavel, self.av_spect/self.scalar, label='sst data')
-        ax[0].plot(self._wavel, self.quiet_spect/self.scalar, label='sst quiet sun') #
+        ax[0].plot(self._wavel, self.av_spect, label='sst data')
+        ax[0].plot(self._wavel, self.quiet_spect, label='sst quiet sun') #
 
         theta = self.theta_nessi_to_quiet_sun
 
@@ -1012,7 +1010,7 @@ class SST_data():
 
         ax[0].set_title("spectral lines of SST frame "+str(frame)+" H\u03B1 with normalized intensity")
         self.frame_integrated_spect(frame)
-        ax[0].plot(self._wavel, self.av_spect/self.scalar, '--', label='overal spectrum sst')
+        ax[0].plot(self._wavel, self.av_spect, '--', label='overal spectrum sst')
         theta = [0,0,1]
         ax[0].plot(theor_line.sst_wav + theta[0], theta[2] * theor_line.sst_dc*theor_line.sst_clv[12] + theta[1], '--', label='nessi mu = 0.76', color='black')
 
@@ -1027,7 +1025,7 @@ class SST_data():
             else:
                 color = np.array(np.random.choice(range(256), size=3))/255
             t+=1
-            ax[0].plot(self._wavel, self.frame_integrated_spect(frame, xlim=xlim, ylim=ylim)/self.scalar, color=color, label=str(color)+' area') #
+            ax[0].plot(self._wavel, self.frame_integrated_spect(frame, xlim=xlim, ylim=ylim), color=color, label=str(color)+' area') #
             ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color)
         ax[0].legend()
         if hasattr(self, 'line_lim') and restrict_to_line:
