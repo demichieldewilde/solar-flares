@@ -33,6 +33,8 @@ hence 1/53.544360373477076
 def contrast_FOV_data(name_of_line, data, quiet_sun_subtraction=True, num=100, normal=True, scale_pix_to_saas=1/53.4):
     FOV = data[f"FOV_{name_of_line}"]
     wav_qs, qs_spec, std_qs = data[f"quiet_sun_{name_of_line}"]
+    if np.log(qs_spec[0]) <-4 or np.log(qs_spec) > 4:
+        qs_spec = qs_spec / 
     time = data[f"TIME_{name_of_line}"]
     wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
     std_qs *= scale_pix_to_saas
@@ -50,11 +52,16 @@ def contrast_FOV_data(name_of_line, data, quiet_sun_subtraction=True, num=100, n
         DFOV = np.array([interp1d(wav_qs, FOV[i,:])(wav)  for i in range(np.shape(FOV)[0])]) - interp1d(wav_qsc, qs_spectc)(wav)
     else:
         DFOV = np.array([interp1d(wav_qs, FOV[i,:])(wav)  for i in range(np.shape(FOV)[0])]) / interp1d(wav_qsc, qs_spectc)(wav) -1
-
+        
     line = interp1d(wav_qsc, qs_spectc)(wav)
     std = interp1d(wav_qs, std_qs)(wav)
-
-    return wav, DFOV , time, line, std
+    # Correct normalization for area and mu-value (all intensities are normalized on the first wavelength)
+    #   -correction factor for average vs quiet sun normalization is 1/(qs_spec[0])
+    #   -correction factor for mu value is clv(at wav_qs[0])/1
+    # thereby we have 1/(qs_spec[0]) * clv(at wav_qs[0])/1 thus
+    corr = 1/qs_spec[0] * interp1d(wav_nessi, clv_nessi)(wav_qs[0])
+    print(f"the correction factor is {corr}")
+    return wav, DFOV*corr , time, line, std*corr
 
 def smooth_wavelengths(wav1, wav2, num=100):
     start = max(np.min(wav1), np.min(wav2))
@@ -73,8 +80,12 @@ def get_harps_std(name, backup=1):
 
 def noise_alike_harps(name, shape, backup=1, x_steps=1):
     std = get_harps_std(name, backup)
-    noise = np.array([generate_random_array(shape[1], block_size=x_steps, std=std)  for j in range(shape[0])]) #np.random.normal(loc=0, scale=std, size=shape)
-    return noise
+    return np.array(
+        [
+            generate_random_array(shape[1], block_size=x_steps, std=std)
+            for _ in range(shape[0])
+        ]
+    )
 
 def generate_random_array(size, block_size, std):
     """
@@ -136,10 +147,8 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=True, area_factor
     line = interp1d(wav_nessi, dc_nessi)(wav)
     # Correct normalization for area and mu-value (all intensities are normalized on the first wavelength)
     #   -correction for area is area_factor
-    #   -correction factor for average vs quiet sun normalization is 1/(dc_nessi[0]*clv_nessi[0])
-    #   -correction factor for mu value is clv[0]/1
-    # thereby we have area_factor * 1/(dc_nessi[0]*clv_nessi[0]) * clv[0]/1 thus
-    DFD = area_factor * DFOV / dc_nessi[0]
+    # thereby we have area_factor * clv(at wav_qs[0])/1 thus
+    DFD = area_factor * DFOV
     print('the correction for the mu_value normalization is ', 1/dc_nessi[0])
     
     if add_noise:
