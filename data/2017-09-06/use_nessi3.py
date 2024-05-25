@@ -395,7 +395,8 @@ class SST_data_from_multiple_fits_files():
     # spectfilename is alike 'spectfile6563_93.idlsave'
     # timesfilename is alike "times6563_93_2017_09_06_11_55_47.idlsave"
     #
-    def __init__(self, timeframe_to_filename_fits, spectfilename, number_of_frames, time, name_of_line, thresh=[1e-10,2e-7], boundary_methode='search', 
+    def __init__(self, timeframe_to_filename_fits, spectfilename, number_of_frames, time, name_of_line,
+                 thresh=[1e-10,2e-7], boundary_methode='search', 
                  boundary_arguments=None, cont_point=None, with_stokes=False, with_time=False):
         self.with_stokes = with_stokes
         self.with_time = with_time
@@ -655,9 +656,10 @@ class SST_data_from_multiple_fits_files():
 
         if methode == 'search':
             error = arguments.get('error', 0.001) if arguments is not None else 0.001
+            ind = arguments.get('index_of_zero', 0) if arguments is not None else 0
             self.zeros = self.calculate_zeros(error=error)
             print(f'{self.zeros = }')
-            self.calculate_boundary(error=error)
+            self.calculate_boundary(error=error, ind=ind)
             self._boundary_per_frame = True
 
         elif methode == 'By_user':
@@ -750,7 +752,7 @@ class SST_data_from_multiple_fits_files():
 
             return [zero]
 
-    def calculate_boundary(self, error=0.001, frame=0):
+    def calculate_boundary(self, error=0.001, frame=0, ind=0):
         self.zeros = self.calculate_zeros(error=error, frame=frame)
         # print(f"calculation of the boundary and zero for frame {frame}")
         try:
@@ -766,7 +768,7 @@ class SST_data_from_multiple_fits_files():
 
         zero = self.zeros[0]
         # intensity_match(zero, self.datacube(frame)[:,y,x], error=error)
-        R = np.where(np.abs(self.datacube(frame)[0,:,:]-zero[0])< error * zero[0], 0, 1)
+        R = np.where(np.abs(self.datacube(frame)[ind,:,:]-zero[ind])< error * np.average(self.datacube(frame)), 0, 1)
         self.boundary = R
         return R
 
