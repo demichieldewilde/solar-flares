@@ -541,24 +541,24 @@ class SST_data_from_multiple_fits_files():
             xmax=self.shape
             ymax=xmax[3]
             xmax = xmax[4]
-            pixels = []
-            for i in range(numb):
-                pixels.append([randint(0,xmax-1), randint(0, ymax-1)])
+            pixels = [[randint(0,xmax-1), randint(0, ymax-1)] for _ in range(numb)]
         else:
             numb = len(pixels)
         self.ccp_frame(frame,Show=False)
         colors=self.current_ccp
 
         fig, ax = plt.subplots(1)
-        ax.set_title("spectral lines of some pixels: "+ self.time_of_frame(frame) )
+        ax.set_title(f"spectral lines of some pixels: {self.time_of_frame(frame)}")
         if len(pixels)>0:
-            if hasattr(self, 'correction'):
-                corr = self.correction
-            else:
-                corr = self._wavel*0
+            corr = self.correction if hasattr(self, 'correction') else self._wavel*0
         for p in range(numb):
-            ax.plot(self._wavel, self.datacube(frame)[ :, pixels[p][1], pixels[p][0]]+self.scalar*corr,color=colors[pixels[p][1]][pixels[p][0]]/255,
-                    label="pixel x="+str(pixels[p][0])+" y="+str(pixels[p][1]))
+            ax.plot(
+                self._wavel,
+                self.datacube(frame)[:, pixels[p][1], pixels[p][0]] / self.scalar
+                + corr,
+                color=colors[pixels[p][1]][pixels[p][0]] / 255,
+                label=f"pixel x={str(pixels[p][0])} y={str(pixels[p][1])}",
+            )
         if hasattr(self, 'line_lim'):
             ax.set_xlim(self.line_lim)
         ax.set_xlabel(r"wavelength [$\rm\AA$]")
@@ -586,7 +586,6 @@ class SST_data_from_multiple_fits_files():
         try :
             FOV_spectrum = np.load(filename)
         except FileNotFoundError:
-            # time_av_spectrum = np.array([Ha.frame_integrated_spect(frame)/Ha.scalar for frame in range(213)])
             FOV_spectrum=[]
             print(f'In total {self.shape[0]} frames.\nNow calculating frame:', )
             for frame in range(self.shape[0]):
@@ -594,7 +593,7 @@ class SST_data_from_multiple_fits_files():
                 for i in range(len(str(frame))+1):
                     s += '\r'
                 print(s, end=str(frame))
-                FOV_spectrum.append(self.frame_integrated_spect(frame)/self.scalar)
+                FOV_spectrum.append(self.frame_integrated_spect(frame))
 
             FOV_spectrum = np.array(FOV_spectrum)
             np.save(filename, FOV_spectrum)
@@ -686,7 +685,7 @@ class SST_data_from_multiple_fits_files():
             if np.isnan(self.scalar):
                 print('This is a problem. The self.scalar is nan.')
                 # A scalar which will normalize the intensity
-                self.scalar = 0
+                self.scalar = 1
                 self.scalar = self.frame_integrated_spect(0)[0]
                 if np.isnan(self.scalar):
                     print('The problem is not fixed by renormalization.\nMake sure no other constants are nan in the definition of the scalar')
@@ -864,18 +863,18 @@ class SST_data_from_multiple_fits_files():
 
         if np.any(np.isnan(self.zeros)):
             self.av_spect = self.disgard_cont_point(
-                np.array([np.nanmean(self.datacube(frame)[i,ymin:ymax,xmin:xmax]) for i in range(len(self._wavel))]) + self.scalar*corr
+                np.array([np.nanmean(self.datacube(frame)[i,ymin:ymax,xmin:xmax]) for i in range(len(self._wavel))]) / self.scalar + corr
                 )
         else:
             self.av_spect = self.disgard_cont_point(
-            np.array([np.average(self.datacube(frame)[i,ymin:ymax,xmin:xmax],weights=R[ymin:ymax,xmin:xmax]) for i in range(len(self._wavel))]) + self.scalar*corr
+            np.array([np.average(self.datacube(frame)[i,ymin:ymax,xmin:xmax],weights=R[ymin:ymax,xmin:xmax]) for i in range(len(self._wavel))]) / self.scalar + corr
             )
         if variation:
             npxl = (ymax-ymin)*(xmax-xmin) #number of pixels
             if np.any(np.isnan(self.zeros)):
-                self.var_spect = np.array([np.nanstd(self.datacube(frame)[i,ymin:ymax,xmin:xmax]) for i in range(len(self._wavel))])/npxl**0.5
+                self.var_spect = np.array([np.nanstd(self.datacube(frame)[i,ymin:ymax,xmin:xmax]/self.scalar) for i in range(len(self._wavel))])/npxl**0.5
             else:
-                self.var_spect = np.array([np.std(self.datacube(frame)[i,ymin:ymax,xmin:xmax])for i in range(len(self._wavel))])/npxl**0.5
+                self.var_spect = np.array([np.std(self.datacube(frame)[i,ymin:ymax,xmin:xmax]/self.scalar)for i in range(len(self._wavel))])/npxl**0.5
 
         return self.av_spect
 
@@ -890,19 +889,23 @@ class SST_data_from_multiple_fits_files():
 
 
         fig, ax = plt.subplots(1,1, figsize=(5,5), sharey=False)
-        ax.set_title("spectral lines of SST frame "+str(frame)+" in relative intensity ")
-        ax.plot(self._wavel, self.av_spect/self.scalar,color='red', label="sst averaged") # linewidth
+        ax.set_title(
+            f"spectral lines of SST frame {str(frame)} in relative intensity "
+        )
+        ax.plot(self._wavel, self.av_spect,color='red', label="sst averaged") # linewidth
 
         # to give relative intensities
         if len(pixels) > 0:
-            if hasattr(self, 'correction'):
-                corr = self.correction
-            else:
-                corr = self._wavel*0
+            corr = self.correction if hasattr(self, 'correction') else self._wavel*0
         for p in range(len(pixels)):
             x, y = pixels[p]
             col = self.current_ccp[y,x]
-            ax.plot(self._wavel, self.datacube(frame)[:,y,x]/self.scalar + corr,color=col/255, label="pixel@("+str(x)+","+str(y)+")")
+            ax.plot(
+                self._wavel,
+                self.datacube(frame)[:, y, x] / self.scalar + corr,
+                color=col / 255,
+                label=f"pixel@({str(x)},{str(y)})",
+            )
 
         if hasattr(self, 'line_lim'):
             ax.set_xlim(self.line_lim)
@@ -986,7 +989,7 @@ class SST_data_from_multiple_fits_files():
         # dY = np.where(theor_Ha.sst_wav<6563.8, 0.01, 10) + np.where(6561.8<theor_Ha.sst_wav, 0.01, 10)
         #To simulate a specific domain around the well we cam make the errors on the wings huge
 
-        data = [self._wavel,  self.quiet_spect / self.scalar,np.zeros(g)+0.001,np.zeros(g)+0.001]
+        data = [self._wavel,  self.quiet_spect, np.zeros(g)+0.001,np.zeros(g)+0.001]
         if initial_values is None:
             initial_values = np.array([-0.215, -0.111, 1.26])
 
@@ -1015,10 +1018,13 @@ class SST_data_from_multiple_fits_files():
 
 
 
-        ax[0].set_title("spectral lines of SST frame "+str(frame)+" H\u03B1 with normalized intensity")
+        ax[0].set_title(
+            f"spectral lines of SST frame {str(frame)}"
+            + " H\u03B1 with normalized intensity"
+        )
         self.frame_integrated_spect(frame)
-        ax[0].plot(self._wavel, self.av_spect/self.scalar, label='sst data')
-        ax[0].plot(self._wavel, self.quiet_spect/self.scalar, label='sst quiet sun') #
+        ax[0].plot(self._wavel, self.av_spect, label='sst data')
+        ax[0].plot(self._wavel, self.quiet_spect, label='sst quiet sun') #
 
         theta = self.theta_nessi_to_quiet_sun
 
@@ -1027,7 +1033,7 @@ class SST_data_from_multiple_fits_files():
         ax[0].legend()
         ax[1].imshow(self.current_ccp,origin='lower')
         ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]])
-        ax[1].set_title("COCOplot of frame "+str(frame))
+        ax[1].set_title(f"COCOplot of frame {str(frame)}")
         if hasattr(self, 'line_lim') and restrict_to_line:
             ax[0].set_xlim(self.line_lim)
         plt.show()
@@ -1052,24 +1058,31 @@ class SST_data_from_multiple_fits_files():
 
         colors=['red', 'blue', 'yellow', 'orange', 'pink', 'purple', 'limegreen', 'darkgreen', 'gray']
 
-        ax[0].set_title("spectral lines of SST frame "+str(frame)+" H\u03B1 with normalized intensity")
+        ax[0].set_title(
+            f"spectral lines of SST frame {str(frame)}"
+            + " H\u03B1 with normalized intensity"
+        )
         self.frame_integrated_spect(frame)
-        ax[0].plot(self._wavel, self.av_spect/self.scalar, '--', label='overal spectrum sst')
+        ax[0].plot(self._wavel, self.av_spect, '--', label='overal spectrum sst')
         theta = [0,0,1]
         ax[0].plot(theor_line.sst_wav + theta[0], theta[2] * theor_line.sst_dc*theor_line.sst_clv[12] + theta[1], '--', label='nessi mu = 0.76', color='black')
 
         ax[1].imshow(self.current_ccp,origin='lower')
-        ax[1].set_title("COCOplot of frame "+str(frame))
-        t=0
-        for i in X:
+        ax[1].set_title(f"COCOplot of frame {str(frame)}")
+        for t, i in enumerate(X):
             xlim=i[0]
             ylim=i[1]
-            if t<len(colors):
-                color=colors[t]
-            else:
-                color = np.array(np.random.choice(range(256), size=3))/255
-            t+=1
-            ax[0].plot(self._wavel, self.frame_integrated_spect(frame, xlim=xlim, ylim=ylim)/self.scalar, color=color, label=str(color)+' area') #
+            color = (
+                colors[t]
+                if t < len(colors)
+                else np.array(np.random.choice(range(256), size=3)) / 255
+            )
+            ax[0].plot(
+                self._wavel,
+                self.frame_integrated_spect(frame, xlim=xlim, ylim=ylim),
+                color=color,
+                label=f'{str(color)} area',
+            )
             ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color)
         ax[0].legend()
         if hasattr(self, 'line_lim') and restrict_to_line:
@@ -1575,7 +1588,7 @@ def signal_of_interval(sst_data, FOV_spectrum, intervals, area_factor=(60**2/4/n
         print(f"Now calculating for interval {interval}", end='\r')
 
         wavl = sst_data._wavel
-        quiet_sun = sst_data.quiet_spect/sst_data.scalar
+        quiet_sun = sst_data.quiet_spect
         w2, restx = restrict_intervalx2(interval, wavl)
         q2 = restx(quiet_sun)
 

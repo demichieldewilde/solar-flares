@@ -33,8 +33,6 @@ hence 1/53.544360373477076
 def contrast_FOV_data(name_of_line, data, quiet_sun_subtraction=True, num=100, normal=True, scale_pix_to_saas=1/53.4):
     FOV = data[f"FOV_{name_of_line}"]
     wav_qs, qs_spec, std_qs = data[f"quiet_sun_{name_of_line}"]
-    if np.log(qs_spec[0]) <-4 or np.log(qs_spec) > 4:
-        qs_spec = qs_spec / 
     time = data[f"TIME_{name_of_line}"]
     wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
     std_qs *= scale_pix_to_saas
@@ -56,10 +54,13 @@ def contrast_FOV_data(name_of_line, data, quiet_sun_subtraction=True, num=100, n
     line = interp1d(wav_qsc, qs_spectc)(wav)
     std = interp1d(wav_qs, std_qs)(wav)
     # Correct normalization for area and mu-value (all intensities are normalized on the first wavelength)
-    #   -correction factor for average vs quiet sun normalization is 1/(qs_spec[0])
+    #   -correction factor for average vs quiet sun normalization is 1/(dc_nessi[0] * clv_nessi[0])
     #   -correction factor for mu value is clv(at wav_qs[0])/1
-    # thereby we have 1/(qs_spec[0]) * clv(at wav_qs[0])/1 thus
-    corr = 1/qs_spec[0] * interp1d(wav_nessi, clv_nessi)(wav_qs[0])
+    # thereby we have 1/(dc_nessi[0] * clv_nessi[0]) * clv[0]/1 thus
+    if 'CaK' in name_of_line:
+        corr = 1/dc_nessi[-1] 
+    else:
+        corr = 1/ ((dc_nessi[0] + dc_nessi[-1]) / 2)
     print(f"the correction factor is {corr}")
     return wav, DFOV*corr , time, line, std*corr
 
@@ -149,7 +150,6 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=True, area_factor
     #   -correction for area is area_factor
     # thereby we have area_factor * clv(at wav_qs[0])/1 thus
     DFD = area_factor * DFOV
-    print('the correction for the mu_value normalization is ', 1/dc_nessi[0])
     
     if add_noise:
         noise = np.random.normal(loc=0, scale=std[0], size=(DFD.shape))
