@@ -73,35 +73,34 @@ class linestudier():
     '''
     def theoretic_line(self, data_filename, map=True):
         self.cont_point=None
-        if '.fits' == data_filename[-5:]:
+        if data_filename[-5:] == '.fits':
             self.has = f.open(get_file_path_fits(data_filename))
 
             self.sst_wav = self.has[1].data
             self.sst_mu = self.has[2].data
             self.sst_int = self.has[4].data.T
-            self.sst_dc = self.sst_int[0]
-            # CLV profiles should be normalized in such a way that at mu=1 it is is 1 all over, and the rest is lower.
-            self.sst_clv = self.sst_int.copy()
-            self.sst_clv /= self.sst_clv[0]
-
-        elif '.npy' == data_filename[-4:]:
+            self._extracted_from_theoretic_line_9()
+        elif data_filename[-4:] == '.npy':
             self.has2 = np.load(get_file_path_line_data(data_filename), allow_pickle=True)
             self.sst_wav = self.has2[0]
             self.sst_mu  = self.has2[1]
             self.sst_int = self.has2[3].T
-            self.sst_dc  = self.sst_int[0]
-            # CLV profiles should be normalized in such a way that at mu=1 it is is 1 all over, and the rest is lower.
-            self.sst_clv = self.sst_int.copy()
-            self.sst_clv/= self.sst_clv[0]
-
+            self._extracted_from_theoretic_line_9()
         else:
             raise TypeError('Only .fits and .npy supported as nessi clv.')
-        
+
         self.n = np.shape(self.sst_wav)
 
         # visual aid
         if map:
             self.map_expected_clv()
+
+    # TODO Rename this here and in `theoretic_line`
+    def _extracted_from_theoretic_line_9(self):
+        self.sst_dc = self.sst_int[0]
+        # CLV profiles should be normalized in such a way that at mu=1 it is is 1 all over, and the rest is lower.
+        self.sst_clv = self.sst_int.copy()
+        self.sst_clv /= self.sst_clv[0]
             
 
 
@@ -203,9 +202,6 @@ class linestudier():
         if self.neglect_atlas:
             return
         test_si = self.saas_profile
-
-
-
 
         #test_si = test_si/np.min(test_si)*np.min(test_si)
         test_si = test_si/test_si[0]
@@ -312,18 +308,30 @@ class linestudier():
             print(mini)
             da.kwaliteit_fit(data, mini)
 
-
+    def set_fov(self, X, Y, boundary, sr=959.63):
+        
+        self.fov = [X/sr, Y/sr, boundary]
+        self.saas.update_clv(self.sst_mu,self.sst_wav,self.sst_clv,self.sst_wav,self.sst_dc)
+        self.saas.update_vrot(0.,0.)
+        self.saas_profile = self.saas.get_integration()
+        fov_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
+        self.diff_fov = self.saas.get_diff_spectra_fov(X/sr,Y/sr,fov_spectra)
+        
+    def set_quiet_sun()
+        
 def fix_mu_theor(theor_line, mu):
     theor_line.exact_mu = mu
     x = np.abs(theor_line.sst_mu-mu)
     index_mu = np.where(x == np.min(x))[0]
     theor_line.index_mu = index_mu
     theor_line.best_fit_clv = clv_fit(mu, theor_line)
-    print(f'Mu also set to the theoretic nessi line.')
+    print('Mu also set to the theoretic nessi line.')
 
 
 def clv_fit(mu, theor_line):
     return np.apply_along_axis(lambda arr: interp1d(theor_line.sst_mu, arr)(mu), axis=0, arr=theor_line.sst_clv)
+
+
 
 
 
