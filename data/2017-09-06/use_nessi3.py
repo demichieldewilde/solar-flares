@@ -315,7 +315,7 @@ class linestudier():
         self.saas.update_vrot(0.,0.)
         self.saas_profile = self.saas.get_integration()
         fov_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
-        if not hasatr(self, "diff_fov"):
+        if not hasattr(self, "diff_fov"):
             self.diff_fov = self.saas.get_diff_spectra_fov(X/sr,Y/sr,fov_spectra)
         plt.plot(self.sst_wav, self.saas_profile + self.diff_fov, label="FOV profile NESSI")
         plt.show()
@@ -328,11 +328,12 @@ class linestudier():
         c, d = ylim
         X = self.fov[0][a:b, c:d]
         Y = self.fov[1][a:b, c:d]
-        nw = len(self.sst_wav)
-        nx = b-a
-        ny = d-c
-        qs_spectra = np.ones((nw, nx, ny),dtype="f8") # np.array([boundary[a:b, c:d] for _ in range(len(self.sst_wav))])
-        self.diff_qs = self.saas.get_diff_spectra_fov(X,Y,qs_spectra)
+        nx = b-a-1
+        ny = d-c-1
+        if not hasattr(self, "diff_fov"):
+            nw = len(self.sst_wav)
+            qs_spectra = np.ones((nw, nx, ny),dtype="f8") # np.array([boundary[a:b, c:d] for _ in range(len(self.sst_wav))])
+            self.diff_qs = self.saas.get_diff_spectra_fov(X,Y,qs_spectra)
         plt.plot(self.sst_wav, self.saas_profile + self.diff_qs, label="QS profile NESSI")
         plt.show()
         
