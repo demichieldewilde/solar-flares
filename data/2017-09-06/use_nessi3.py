@@ -309,15 +309,33 @@ class linestudier():
             da.kwaliteit_fit(data, mini)
 
     def set_fov(self, X, Y, boundary, sr=959.63):
-        
+        boundary = boundary[:-1, :-1]
         self.fov = [X/sr, Y/sr, boundary]
         self.saas.update_clv(self.sst_mu,self.sst_wav,self.sst_clv,self.sst_wav,self.sst_dc)
         self.saas.update_vrot(0.,0.)
         self.saas_profile = self.saas.get_integration()
         fov_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
-        self.diff_fov = self.saas.get_diff_spectra_fov(X/sr,Y/sr,fov_spectra)
+        if not hasatr(self, "diff_fov"):
+            self.diff_fov = self.saas.get_diff_spectra_fov(X/sr,Y/sr,fov_spectra)
+        plt.plot(self.sst_wav, self.saas_profile + self.diff_fov, label="FOV profile NESSI")
+        plt.show()
         
-    def set_quiet_sun()
+    def set_quiet_sun(self, xlim, ylim):
+        if not hasattr(self, 'fov'):
+            raise BufferError('self.fov is not yet defined. Please first run self.set_fov().')
+        self.quiet_sun = [xlim, ylim]
+        a, b = xlim
+        c, d = ylim
+        X = self.fov[0][a:b, c:d]
+        Y = self.fov[1][a:b, c:d]
+        nw = len(self.sst_wav)
+        nx = b-a
+        ny = d-c
+        qs_spectra = np.ones((nw, nx, ny),dtype="f8") # np.array([boundary[a:b, c:d] for _ in range(len(self.sst_wav))])
+        self.diff_qs = self.saas.get_diff_spectra_fov(X,Y,qs_spectra)
+        plt.plot(self.sst_wav, self.saas_profile + self.diff_qs, label="QS profile NESSI")
+        plt.show()
+        
         
 def fix_mu_theor(theor_line, mu):
     theor_line.exact_mu = mu
