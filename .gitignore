@@ -2,12 +2,13 @@
 # neglect all files except .fits, .pdf, and .png
 !*.py
 !*.ipynb  # Add other file types you want to track if needed
+!*.jpg
+!*.png
 
 
 # Exclude .fits, .pdf, and .png files recursively
 *.fits
 *.pdf
-# *.png
 *.idlsave
 *.npy
 *.txt
@@ -16,7 +17,6 @@
 *.zip
 *.mp4
 *.f0
-# *.jpg
 *.fcube
 *.pro
 *.npz
