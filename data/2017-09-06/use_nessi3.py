@@ -310,14 +310,22 @@ class linestudier():
 
     def set_fov(self, X, Y, boundary, sr=959.63):
         boundary = convert_boundary_to_nan(boundary[:-1, :-1])
-        self.fov = [X/sr, Y/sr, boundary]
+        X /= sr
+        Y /= sr
+        self.fov = [X, Y, boundary]
         self.saas.update_clv(self.sst_mu,self.sst_wav,self.sst_clv,self.sst_wav,self.sst_dc)
         self.saas.update_vrot(0.,0.)
         self.saas_profile = self.saas.get_integration()
         fov_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
-        areafactor = 60**2 / (np.pi*950**2)
-        self.spectr_fov = -self.saas.get_diff_spectra_fov(X/sr,Y/sr,fov_spectra) / areafactor
-        plt.plot(self.sst_wav, self.saas_profile + self.spectr_fov, label="FOV profile NESSI")
+        dx = (X[1:,1:] - X[0:-1,0:-1])
+        dy = (Y[1:,1:] - Y[0:-1,0:-1])
+        areafactor = np.nansum(dx*dy+boundary) /np.pi
+        print(areafactor)
+        # areafactor = 1 / np.pi * (X[-1,-1]-X[0,0]) * (Y[-1,-1]-Y[0,0])
+        self.spectr_fov = -self.saas.get_diff_spectra_fov(X,Y,fov_spectra) / areafactor
+        plt.plot(self.sst_wav, self.saas_profile, label="SAAS profile NESSI")
+        plt.plot(self.sst_wav, self.spectr_fov, label="FOV profile NESSI")
+        plt.legend()
         plt.show()
         
     def set_quiet_sun(self, xlim, ylim):
@@ -346,6 +354,13 @@ class linestudier():
             raise ValueError("linestudier has no attribure theta_nessi_to_quiet_sun. First gauge to quiet sun!")
         theta = self.theta_nessi_to_quiet_sun
         return interp1d(self.sst_wav + theta[0], theta[2] * self.spectr_fov + theta[1]
+                                    , kind='linear', fill_value="extrapolate")
+        
+    def adapted_qs_spectr(self):
+        if not hasattr(self, "theta_nessi_to_quiet_sun"):
+            raise ValueError("linestudier has no attribure theta_nessi_to_quiet_sun. First gauge to quiet sun!")
+        theta = self.theta_nessi_to_quiet_sun
+        return interp1d(self.sst_wav + theta[0], theta[2] * self.spectr_qs + theta[1]
                                     , kind='linear', fill_value="extrapolate")
 
 def convert_boundary_to_nan(boundary):
@@ -437,7 +452,7 @@ class SST_data_from_multiple_fits_files():
     # timesfilename is alike "times6563_93_2017_09_06_11_55_47.idlsave"
     #
     def __init__(self, timeframe_to_filename_fits, spectfilename, number_of_frames, time, name_of_line,
-                 thresh=[1e-10,2e-7], boundary_methode='search', 
+                 thresh=[1e-10,2e-7], boundary_methode='search', alternative_datacube=None,
                  boundary_arguments=None, cont_point=None, with_stokes=False, with_time=False):
         self.with_stokes = with_stokes
         self.with_time = with_time
@@ -450,6 +465,9 @@ class SST_data_from_multiple_fits_files():
         s = np.shape(self.datacube(0))
         self.shape = (number_of_frames, 1 , s[-3], s[-2], s[-1]) if not with_stokes else (number_of_frames, '??' , s[0], s[1], s[2])
         print(f"the shape of the data is {self.shape}")
+        
+        if alternative_datacube is not None:
+            self.alternative_datacube = alternative_datacube
         # spectral positions 
         if spectfilename == 'use_solarnet':
             self._wavel = solarnet.get_wav(self.filename)
@@ -496,15 +514,16 @@ class SST_data_from_multiple_fits_files():
         print("The next thing to do is to initalise the filters. Use update_filters(self, MeanSd, form='normal')")
     
     def datacube(self, timeframe):
-        if timeframe < self._number_of_frames and timeframe >= 0:
-            d = f.getdata(self.ttff(timeframe))
-            if self.with_stokes:
-                d = d[0]
-            if self.with_time:
-                d = d[0]
-            return d
-        else:
+        if hasattr(self, "alternative_datacube"):
+            return self.alternative_datacube(timeframe)
+        if timeframe >= self._number_of_frames or timeframe < 0:
             raise IndexError(f"Timeframe {timeframe} is negative or exeeds numer of frames {self._number_of_frames}.")
+        d = f.getdata(self.ttff(timeframe))
+        if self.with_stokes:
+            d = d[0]
+        if self.with_time:
+            d = d[0]
+        return d
     
     # MeanSd: an array which gives mean and standard deviation for the RGB filters for the chosen form.
         # for a normal form for example: [[10,1.25], [6,1], [2,1.25]]
