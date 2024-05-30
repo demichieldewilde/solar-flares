@@ -1761,7 +1761,7 @@ def save_for_further_analysis(sst_data, theor_line):
 
 def load_for_further_analysis(names_of_lines, full_path=None):
     if full_path is None:
-        full_path = full_path(names_of_lines[0])
+        full_path = get_full_path(names_of_lines[0])
     data = {}
     for name in names_of_lines:
         
@@ -1811,7 +1811,7 @@ def correct_flare_start(time, name):
         
     return time + Dt
 
-def full_path(name):
+def get_full_path(name):
     if isinstance(name, list) and len(name) > 0 and isinstance(name[0], str):
         name = name[0]
     if '17a' in name:
@@ -1823,6 +1823,8 @@ def full_path(name):
     elif "13" in name:
         return "D:\solar flares\data\\2013-06-30"
     elif "15" in name:
-        return "D:\solar flares\data\\2015-06-24"
+        return "D:\solar flares\data\\2015-06-24"    
+    elif "14" in name:
+        return "D:\solar flares\data\\2014-06-10"
     else:
         raise FileNotFoundError(f'For the profided name {name} no full path was defined.')

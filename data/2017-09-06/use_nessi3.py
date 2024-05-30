@@ -349,7 +349,7 @@ class linestudier():
         plt.legend()
         plt.show()
         
-    def addapted_fov_spectr(self):
+    def adapted_fov_spectr(self):
         if not hasattr(self, "theta_nessi_to_quiet_sun"):
             raise ValueError("linestudier has no attribure theta_nessi_to_quiet_sun. First gauge to quiet sun!")
         theta = self.theta_nessi_to_quiet_sun
@@ -1811,5 +1811,5 @@ def analyse_optimal_interval(sst_data, Deltas=np.arange(0, 3, 0.03), area_factor
     return A_area, A_wavl, STD_Area, STD_Wavl, Deltas, sst_data.TIME 
 
 
-from use_nessi import full_path, correct_flare_start, load_for_further_analysis, save_for_further_analysis
+from use_nessi import get_full_path, correct_flare_start, load_for_further_analysis, save_for_further_analysis
 from use_nessi import add_enters
