@@ -1743,14 +1743,17 @@ def save_for_further_analysis(sst_data, theor_line):
 
     # save quiet_sun profile
     filename = get_file_path_line_data(f"quiet_sun_{sst_data.name_of_line}")
-    np.save(filename, np.array([sst_data._wavel, sst_data.quiet_spect/sst_data.scalar, sst_data.std_quiet_sun/sst_data.scalar]))
+    np.save(filename, np.array([sst_data._wavel, sst_data.quiet_spect, sst_data.std_quiet_sun]))
 
     # save nessi best clv spectrum and full disk
     # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
     theta = sst_data.theta_nessi_to_quiet_sun
 
     filename = get_file_path_line_data(f"nessi_{sst_data.name_of_line}")
-    np.save(filename, np.array([theor_line.sst_wav+theta[0], theor_line.sst_dc*theta[2] + theta[1], theor_line.best_fit_clv]))
+    if hasattr(theor_line, "spectr_fov"):
+        np.save(filename, np.array([theor_line.sst_wav+theta[0], theor_line.sst_dc*theta[2] + theta[1], theor_line.spectr_fov/theor_line.sst_dc]))
+    else:
+        np.save(filename, np.array([theor_line.sst_wav+theta[0], theor_line.sst_dc*theta[2] + theta[1], theor_line.best_fit_clv]))
 
     # save time in minutes
     filename = get_file_path_line_data(f"TIME_{sst_data.name_of_line}")

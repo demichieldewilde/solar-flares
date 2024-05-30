@@ -7,7 +7,7 @@
 # Exclude .fits, .pdf, and .png files recursively
 *.fits
 *.pdf
-*.png
+# *.png
 *.idlsave
 *.npy
 *.txt
@@ -16,7 +16,7 @@
 *.zip
 *.mp4
 *.f0
-*.jpg
+# *.jpg
 *.fcube
 *.pro
 *.npz

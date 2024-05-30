@@ -309,15 +309,15 @@ class linestudier():
             da.kwaliteit_fit(data, mini)
 
     def set_fov(self, X, Y, boundary, sr=959.63):
-        boundary = boundary[:-1, :-1]
+        boundary = convert_boundary_to_nan(boundary[:-1, :-1])
         self.fov = [X/sr, Y/sr, boundary]
         self.saas.update_clv(self.sst_mu,self.sst_wav,self.sst_clv,self.sst_wav,self.sst_dc)
         self.saas.update_vrot(0.,0.)
         self.saas_profile = self.saas.get_integration()
         fov_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
-        if not hasattr(self, "diff_fov"):
-            self.diff_fov = self.saas.get_diff_spectra_fov(X/sr,Y/sr,fov_spectra)
-        plt.plot(self.sst_wav, self.saas_profile + self.diff_fov, label="FOV profile NESSI")
+        areafactor = 60**2 / (np.pi*950**2)
+        self.spectr_fov = -self.saas.get_diff_spectra_fov(X/sr,Y/sr,fov_spectra) / areafactor
+        plt.plot(self.sst_wav, self.saas_profile + self.spectr_fov, label="FOV profile NESSI")
         plt.show()
         
     def set_quiet_sun(self, xlim, ylim):
@@ -328,15 +328,22 @@ class linestudier():
         c, d = ylim
         X = self.fov[0][a:b, c:d]
         Y = self.fov[1][a:b, c:d]
+        areafactor = 1 / np.pi * (X[-1,-1]-X[0,0]) * (Y[-1,-1]-Y[0,0])
         nx = b-a-1
         ny = d-c-1
-        if not hasattr(self, "diff_fov"):
-            nw = len(self.sst_wav)
-            qs_spectra = np.ones((nw, nx, ny),dtype="f8") # np.array([boundary[a:b, c:d] for _ in range(len(self.sst_wav))])
-            self.diff_qs = self.saas.get_diff_spectra_fov(X,Y,qs_spectra)
-        plt.plot(self.sst_wav, self.saas_profile + self.diff_qs, label="QS profile NESSI")
+        nw = len(self.sst_wav)
+        boundary = self.fov[2]
+        qs_spectra = np.array([boundary[a:b-1, c:d-1] for _ in range(len(self.sst_wav))])
+        self.spectr_qs = -self.saas.get_diff_spectra_fov(X,Y,qs_spectra) / areafactor
+        plt.plot(self.sst_wav, self.saas_profile, label="SAAS profile NESSI")
+        plt.plot(self.sst_wav, self.spectr_qs, label="QS profile NESSI")
+        plt.plot(self.sst_wav, self.spectr_fov, label="FOV profile NESSI")
+        plt.legend()
         plt.show()
-        
+
+def convert_boundary_to_nan(boundary):
+    return np.where(boundary == 0, np.nan, 0)
+     
         
 def fix_mu_theor(theor_line, mu):
     theor_line.exact_mu = mu
