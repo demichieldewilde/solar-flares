@@ -340,6 +340,13 @@ class linestudier():
         plt.plot(self.sst_wav, self.spectr_fov, label="FOV profile NESSI")
         plt.legend()
         plt.show()
+        
+    def addapted_fov_spectr(self):
+        if not hasattr(self, "theta_nessi_to_quiet_sun"):
+            raise ValueError("linestudier has no attribure theta_nessi_to_quiet_sun. First gauge to quiet sun!")
+        theta = self.theta_nessi_to_quiet_sun
+        return interp1d(self.sst_wav + theta[0], theta[2] * self.spectr_fov + theta[1]
+                                    , kind='linear', fill_value="extrapolate")
 
 def convert_boundary_to_nan(boundary):
     return np.where(boundary == 0, np.nan, 0)
@@ -720,7 +727,7 @@ class SST_data_from_multiple_fits_files():
                 print('This is a problem. The self.scalar is nan.')
                 # A scalar which will normalize the intensity
                 self.scalar = 1
-                self.scalar = self.frame_integrated_spect(0)[0]
+                self.scalar = np.average(self.frame_integrated_spect(0))
                 if np.isnan(self.scalar):
                     print('The problem is not fixed by renormalization.\nMake sure no other constants are nan in the definition of the scalar')
 
@@ -892,7 +899,7 @@ class SST_data_from_multiple_fits_files():
                 self.scalar =np.nanmean(self.datacube(0)[0,:,:])
             else:
                 print(np.shape(self.datacube(0)[0,:,:]), np.shape(R))
-                self.scalar = np.average(self.datacube(0)[0,:,:],weights=R)
+                self.scalar = np.average([np.average(self.datacube(0)[i,:,:],weights=R) for i in range(len(self._wavel))])
 
 
         if np.any(np.isnan(self.zeros)):

@@ -645,7 +645,7 @@ class SST_data():
                 print('This is a problem. The self.scalar is nan.')
                 # A scalar which will normalize the intensity
                 self.scalar = 1
-                self.scalar = self.frame_integrated_spect(0)[0]
+                self.scalar = np.average(self.frame_integrated_spect(0))
                 if np.isnan(self.scalar):
                     print('The problem is not fixed by renormalization.\nMake sure no other constants are nan in the definition of the scalar')
         else:
@@ -815,7 +815,7 @@ class SST_data():
                 self.scalar =np.nanmean(self.datacube[0,0,0,:,:])
             else:
                 print(np.shape(self.datacube[0,0,0,:,:]), np.shape(R))
-                self.scalar = np.average(self.datacube[0,0,0,:,:],weights=R)
+                self.scalar = np.average(self.datacube[0,0,:,:,:],weights=R)
 
 
         if np.any(np.isnan(self.zeros)):
@@ -1564,7 +1564,7 @@ def signal_of_interval(sst_data, FOV_spectrum, intervals, area_factor=(60**2/4/n
         print(f"Now calculating for interval {interval}", end='\r')
 
         wavl = sst_data._wavel
-        quiet_sun = sst_data.quiet_spect/sst_data.scalar
+        quiet_sun = sst_data.quiet_spect
         w2, restx = restrict_intervalx2(interval, wavl)
         q2 = restx(quiet_sun)
 
