@@ -336,12 +336,11 @@ class linestudier():
         c, d = ylim
         X = self.fov[0][a:b, c:d]
         Y = self.fov[1][a:b, c:d]
-        areafactor = 1 / np.pi * (X[-1,-1]-X[0,0]) * (Y[-1,-1]-Y[0,0])
-        nx = b-a-1
-        ny = d-c-1
-        nw = len(self.sst_wav)
-        boundary = self.fov[2]
-        qs_spectra = np.array([boundary[a:b-1, c:d-1] for _ in range(len(self.sst_wav))])
+        boundary = self.fov[2][a:b-1, c:d-1]
+        qs_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
+        dx = (X[1:,1:] - X[0:-1,0:-1])
+        dy = (Y[1:,1:] - Y[0:-1,0:-1])
+        areafactor = np.nansum(dx*dy+boundary) /np.pi
         self.spectr_qs = -self.saas.get_diff_spectra_fov(X,Y,qs_spectra) / areafactor
         plt.plot(self.sst_wav, self.saas_profile, label="SAAS profile NESSI")
         plt.plot(self.sst_wav, self.spectr_qs, label="QS profile NESSI")
@@ -531,6 +530,7 @@ class SST_data_from_multiple_fits_files():
     def update_filters(self, MeanSd=None, form="normal"):
         if MeanSd is None:
             MeanSd = guess_filters(len(self._wavel))
+            print(f"The guessed filters are {MeanSd}")
         wavelengths = np.arange(self.shape[2])
         self._filt = cp.filter(wavelengths, form, MeanSd, plot=True)
 
@@ -1715,6 +1715,29 @@ def get_TIME(sst_data):
     TIME = time_to_minutes(sst_data._time)
     TIME -= TIME[0]
     return TIME
+
+def minutes_to_time_string(minutes, start=0):
+  """Converts minutes in float to a string in 'hh:mm:ss' format.
+
+  Args:
+      minutes: A float representing the number of minutes.
+
+  Returns:
+      A string in 'hh:mm:ss' format.
+  """
+
+  # Ensure positive minutes (optional)
+  minutes += start
+
+  # Extract hours, minutes, and seconds
+  hours = int(minutes // 60)
+  minutes = int(minutes % 60)
+  seconds = int((minutes % 60) * 60) % 60
+
+  # Format time string with leading zeros
+  time_string = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+  return time_string
 
 def optimal_ax(ax, A, STD, TIME, Deltas, criterion, timelim=30):
     MAX = np.nanmax(A)
