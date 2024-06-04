@@ -319,7 +319,7 @@ class linestudier():
         fov_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
         dx = (X[1:,1:] - X[0:-1,0:-1])
         dy = (Y[1:,1:] - Y[0:-1,0:-1])
-        areafactor = np.nansum(dx*dy+boundary) /np.pi
+        areafactor = np.nansum(dx*dy+boundary) / np.pi
         print(areafactor)
         # areafactor = 1 / np.pi * (X[-1,-1]-X[0,0]) * (Y[-1,-1]-Y[0,0])
         self.spectr_fov = -self.saas.get_diff_spectra_fov(X,Y,fov_spectra) / areafactor
@@ -328,7 +328,7 @@ class linestudier():
         plt.legend()
         plt.show()
         
-    def set_quiet_sun(self, xlim, ylim):
+    def set_quiet_sun(self, xlim, ylim, show=False):
         if not hasattr(self, 'fov'):
             raise BufferError('self.fov is not yet defined. Please first run self.set_fov().')
         self.quiet_sun = [xlim, ylim]
@@ -341,6 +341,8 @@ class linestudier():
         dx = (X[1:,1:] - X[0:-1,0:-1])
         dy = (Y[1:,1:] - Y[0:-1,0:-1])
         areafactor = np.nansum(dx*dy+boundary) /np.pi
+        if show:
+            print(np.shape(X), np.shape(Y), np.shape(boundary))
         self.spectr_qs = -self.saas.get_diff_spectra_fov(X,Y,qs_spectra) / areafactor
         plt.plot(self.sst_wav, self.saas_profile, label="SAAS profile NESSI")
         plt.plot(self.sst_wav, self.spectr_qs, label="QS profile NESSI")
