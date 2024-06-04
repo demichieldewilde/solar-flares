@@ -312,6 +312,9 @@ class linestudier():
         boundary = convert_boundary_to_nan(boundary[:-1, :-1])
         X /= sr
         Y /= sr
+        r = (X[1:,1:] + X[0:-1,0:-1])**2 / 4 + (Y[1:,1:] - Y[0:-1,0:-1])**2 / 4
+        r = np.where(r >1, np.nan, 0)
+        boundary = boundary * r
         self.fov = [X, Y, boundary]
         self.saas.update_clv(self.sst_mu,self.sst_wav,self.sst_clv,self.sst_wav,self.sst_dc)
         self.saas.update_vrot(0.,0.)
