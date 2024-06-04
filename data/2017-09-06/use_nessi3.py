@@ -378,6 +378,68 @@ def fix_mu_theor(theor_line, mu):
 def clv_fit(mu, theor_line):
     return np.apply_along_axis(lambda arr: interp1d(theor_line.sst_mu, arr)(mu), axis=0, arr=theor_line.sst_clv)
 
+def fit_qs_to_NESSI(theor_line, sst_data,  frame=0):
+    import data_analysis as da
+    # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
+    # theta = [0.2, 0.3, 0.89]
+
+    f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[2] * theor_line.spectr_qs + theta[1]
+                                    , kind='linear', fill_value="extrapolate")
+    f_nessi_fov = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[2] * theor_line.spectr_fov + theta[1]
+                                    , kind='linear', fill_value="extrapolate")
+    f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[2] * theor_line.saas_profile + theta[1]
+                                    , kind='linear', fill_value="extrapolate")
+    g = len(sst_data._wavel)
+
+    #To simulate a specific domain around the well we cam make the errors on the wings huge
+    avs = sst_data.frame_integrated_spect(sst_data.quiet_sun['frame'], sst_data.quiet_sun['xlim'], sst_data.quiet_sun['ylim'], variation=True)
+    stds = sst_data.var_spect
+    print(sst_data._wavel)
+    data = [sst_data._wavel,  avs ,stds,np.zeros(g)+0.01]
+    initial_guess = np.array([np.median(sst_data._wavel) - np.median(theor_line.sst_wav), 0, np.average(avs)/np.average(theor_line.spectr_qs)])
+
+    mini = da.optimalisatie(data, model=f_nessi_qs, beginwaarden=initial_guess, fout_model=None, plot=False)
+    print(mini)
+    theta = mini['x']
+    sst_data.theta_nessi_to_quiet_sun = theta
+    theor_line.theta_nessi_to_quiet_sun = theta
+    da.plot_fit(
+        data,
+        model=f_nessi_qs,
+        theta0=theta,
+        titel="SST quiet sun patch vs nessi (fit)",
+        labelx="wavelength $[\AA]$",
+        labely=" Intensity []",
+        error=False,
+    )
+    da.kwaliteit_fit(data, mini)
+
+    fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(15, 7))
+    # fig.setitle("quiet sun determination, weiging constants")
+
+    fig.suptitle('The gauge of the quiet sun spectrum', fontsize=16)
+
+    sst_data.ccp_frame(frame,Show=False)
+
+    ax[0].set_title(
+        f"spectral lines of SST frame {str(frame)}  with normalized intensity"
+    )
+    sst_data.frame_integrated_spect(frame)
+    ax[0].plot(sst_data._wavel, sst_data.av_spect, label='sst FOV')
+    ax[0].plot(sst_data._wavel, sst_data.quiet_spect, label='sst quiet sun') #
+
+    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_saas(theta)(theor_line.sst_wav + theta[0]), label='NESSI saas')
+    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_qs(theta)(theor_line.sst_wav + theta[0]), label='NESSI QS')
+    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_fov(theta)(theor_line.sst_wav + theta[0]), label='NESSI FOV')
+    ax[0].legend()
+    ax[1].imshow(sst_data.current_ccp, origin='lower')
+    xlim = sst_data['xlim']
+    ylim = sst_data['ylim']
+    color_wanted_patch = sst_data['color']
+    ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color_wanted_patch)
+    ax[1].set_title(f"COCOplot of frame {str(frame)}")
+    plt.show()
+
 
 
 
@@ -718,8 +780,8 @@ class SST_data_from_multiple_fits_files():
             ind = arguments.get('index_of_zero', 0) if arguments is not None else 0
             self.zeros = self.calculate_zeros(error=error)
             print(f'{self.zeros = }')
-            self.calculate_boundary(error=error, ind=ind)
             self._boundary_per_frame = True
+            self.calculate_boundary(error=error, ind=ind)
 
         elif methode == 'By_user':
             quadrilateral_vertices = arguments
@@ -733,7 +795,7 @@ class SST_data_from_multiple_fits_files():
             print(f'{self.shape = }')
             self.boundary = np.ones(self.shape[-2:])
             print()
-            self._boundary_per_frame= False
+            self._boundary_per_frame = False
 
         self.check_scalar_not_nan()
 
@@ -812,6 +874,8 @@ class SST_data_from_multiple_fits_files():
             return [zero]
 
     def calculate_boundary(self, error=0.001, frame=0, ind=0):
+        if not self._boundary_per_frame:
+            return self.boundary
         self.zeros = self.calculate_zeros(error=error, frame=frame)
         # print(f"calculation of the boundary and zero for frame {frame}")
         try:
