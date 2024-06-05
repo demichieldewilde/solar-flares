@@ -46,7 +46,7 @@ class linestudier():
         self.neglect_atlas = neglect_atlas
         if not neglect_atlas:
             if atlas is None:
-                self.atlas = f.getdata(get_file_path_fits('solar_atlas_V1_405-1065.fits'))
+                self.atlas = f.getdata(get_file_path_fits("D:/solar flares/data/2017-09-06/fits/solar_atlas_V1_405-1065.fits"))
             else:
                 self.atlas = atlas
             atlas_w = np.arange(len(self.atlas)) * -0.003766534468 + 24700.0858041
@@ -331,12 +331,14 @@ class linestudier():
         plt.legend()
         plt.show()
         
-    def set_quiet_sun(self, xlim, ylim, show=False):
+    def set_quiet_sun(self, xlim, ylim, show=False, xyswitch=True, sr=959.63):
         if not hasattr(self, 'fov'):
             raise BufferError('self.fov is not yet defined. Please first run self.set_fov().')
         self.quiet_sun = [xlim, ylim]
         a, b = xlim
         c, d = ylim
+        if xyswitch:
+            a , b, c, d = c, d, a, b
         X = self.fov[0][a:b, c:d]
         Y = self.fov[1][a:b, c:d]
         boundary = self.fov[2][a:b-1, c:d-1]
@@ -344,8 +346,9 @@ class linestudier():
         dx = (X[1:,1:] - X[0:-1,0:-1])
         dy = (Y[1:,1:] - Y[0:-1,0:-1])
         areafactor = np.nansum(dx*dy+boundary) /np.pi
-        if show:
-            print(np.shape(X), np.shape(Y), np.shape(boundary))
+        x0, y0 = np.nanmean(X), np.nanmean(Y)
+        print(f"The quiet sun is pick at x {x0*sr, y0*sr} with average\
+              mu {np.cos(np.arcsin((x0**2 +y0**2)**0.5))}")
         self.spectr_qs = -self.saas.get_diff_spectra_fov(X,Y,qs_spectra) / areafactor
         plt.plot(self.sst_wav, self.saas_profile, label="SAAS profile NESSI")
         plt.plot(self.sst_wav, self.spectr_qs, label="QS profile NESSI")
@@ -430,23 +433,60 @@ def fit_qs_to_NESSI(theor_line, sst_data,  frame=0):
         f"spectral lines of SST frame {str(frame)}  with normalized intensity"
     )
     sst_data.frame_integrated_spect(frame)
-    ax[0].plot(sst_data._wavel, sst_data.av_spect, label='sst FOV')
-    ax[0].plot(sst_data._wavel, sst_data.quiet_spect, label='sst quiet sun') #
+    ax[0].plot(sst_data._wavel, sst_data.av_spect, '--', label='sst FOV')
+    ax[0].plot(sst_data._wavel, sst_data.quiet_spect, '--', label='sst quiet sun') #
 
     ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_saas(theta)(theor_line.sst_wav + theta[0]), label='NESSI saas')
     ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_qs(theta)(theor_line.sst_wav + theta[0]), label='NESSI QS')
     ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_fov(theta)(theor_line.sst_wav + theta[0]), label='NESSI FOV')
     ax[0].legend()
     ax[1].imshow(sst_data.current_ccp, origin='lower')
-    xlim = sst_data['xlim']
-    ylim = sst_data['ylim']
-    color_wanted_patch = sst_data['color']
+    xlim = sst_data.quiet_sun['xlim']
+    ylim = sst_data.quiet_sun['ylim']
+    color_wanted_patch = sst_data.quiet_sun['color']
     ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color_wanted_patch)
     ax[1].set_title(f"COCOplot of frame {str(frame)}")
     plt.show()
 
+def fit_qs_to_NESSI_cont_point(theor_line, sst_data,  frame=0):
+    xlim, ylim = theor_line.quiet_sun
+    obs = sst_data.frame_integrated_spect(frame, xlim=xlim, ylim=ylim)
+    theta = [sst_data._wavel[-1]-theor_line.sst_wav[-1], 0,  obs[-1] /theor_line.spectr_qs[-1]]
+    sst_data.theta_nessi_to_quiet_sun = theta
+    print("the theta fit is ",theta)
 
+    f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[2] * theor_line.spectr_qs + theta[1]
+                                    , kind='linear', fill_value="extrapolate")
+    f_nessi_fov = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[2] * theor_line.spectr_fov + theta[1]
+                                    , kind='linear', fill_value="extrapolate")
+    f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[2] * theor_line.saas_profile + theta[1]
+                                    , kind='linear', fill_value="extrapolate")
+    
+    fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(15, 7))
+    # fig.setitle("quiet sun determination, weiging constants")
 
+    fig.suptitle('The gauge of the quiet sun spectrum', fontsize=16)
+
+    sst_data.ccp_frame(frame,Show=False)
+
+    ax[0].set_title(
+        f"spectral lines of SST frame {str(frame)}  with normalized intensity"
+    )
+    sst_data.frame_integrated_spect(frame)
+    ax[0].plot(sst_data._wavel, sst_data.av_spect, '--', label='sst FOV')
+    ax[0].plot(sst_data._wavel, sst_data.quiet_spect, '--', label='sst quiet sun') #
+
+    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_saas(theta)(theor_line.sst_wav + theta[0]), label='NESSI saas')
+    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_qs(theta)(theor_line.sst_wav + theta[0]), label='NESSI QS')
+    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_fov(theta)(theor_line.sst_wav + theta[0]), label='NESSI FOV')
+    ax[0].legend()
+    ax[1].imshow(sst_data.current_ccp, origin='lower')
+    color_wanted_patch = sst_data.quiet_sun['color']
+    ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color_wanted_patch)
+    ax[1].set_title(f"COCOplot of frame {str(frame)}")
+    ax[0].set_xlim(3932, 3936)
+    ax[0].set_ylim(0,10)
+    plt.show()
 
 
 
@@ -519,7 +559,7 @@ class SST_data_from_multiple_fits_files():
     #
     def __init__(self, timeframe_to_filename_fits, spectfilename, number_of_frames, time, name_of_line,
                  thresh=[1e-10,2e-7], boundary_methode='search', alternative_datacube=None,
-                 boundary_arguments=None, cont_point=None, with_stokes=False, with_time=False):
+                 boundary_arguments=None, cont_point=None, with_stokes=False, with_time=False, shape=None):
         self.with_stokes = with_stokes
         self.with_time = with_time
         self.ttff = timeframe_to_filename_fits
@@ -528,8 +568,11 @@ class SST_data_from_multiple_fits_files():
         self.name_of_line = name_of_line
         self._number_of_frames = number_of_frames
         self.cont_point = None
-        s = np.shape(self.datacube(0))
-        self.shape = (number_of_frames, 1 , s[-3], s[-2], s[-1]) if not with_stokes else (number_of_frames, '??' , s[0], s[1], s[2])
+        if shape is not None:
+            self.shape = shape
+        else:
+            s = np.shape(self.datacube(0))
+            self.shape = (number_of_frames, 1 , s[-3], s[-2], s[-1]) if not with_stokes else (number_of_frames, '??' , s[0], s[1], s[2])
         print(f"the shape of the data is {self.shape}")
         
         if alternative_datacube is not None:
@@ -713,17 +756,14 @@ class SST_data_from_multiple_fits_files():
         try :
             FOV_spectrum = np.load(filename)
         except FileNotFoundError:
-            FOV_spectrum=[]
+            FOV_spectrum=self.frame_integrated_spect(0)[None]
+        if np.shape(FOV_spectrum)[0] < self._number_of_frames:
             print(f'In total {self.shape[0]} frames.\nNow calculating frame:', )
-            for frame in range(self.shape[0]):
-                s=''
-                for i in range(len(str(frame))+1):
-                    s += '\r'
+            for frame in range(np.shape(FOV_spectrum)[0], self.shape[0]):
+                s = ''.join('\r' for _ in range(len(str(frame))+1))
                 print(s, end=str(frame))
-                FOV_spectrum.append(self.frame_integrated_spect(frame))
-
-            FOV_spectrum = np.array(FOV_spectrum)
-            np.save(filename, FOV_spectrum)
+                FOV_spectrum = np.concatenate((FOV_spectrum, self.frame_integrated_spect(frame)[None]) ) 
+                np.save(filename, FOV_spectrum)
 
         self.FOV_spectrum = FOV_spectrum
         if show_total_spectrum:
@@ -797,10 +837,13 @@ class SST_data_from_multiple_fits_files():
 
         elif methode == 'No Boundary':
             self.zeros=[]
-            print(f'{self.shape = }')
+            print(f'defining no boundary for shape {self.shape }')
             self.boundary = np.ones(self.shape[-2:])
             print()
             self._boundary_per_frame = False
+            
+        else:
+            raise ValueError(f'The provided boundary methode {methode} is not implemented!')
 
         self.check_scalar_not_nan()
 
@@ -816,11 +859,8 @@ class SST_data_from_multiple_fits_files():
                 self.scalar = np.average(self.frame_integrated_spect(0))
                 if np.isnan(self.scalar):
                     print('The problem is not fixed by renormalization.\nMake sure no other constants are nan in the definition of the scalar')
-
-
         else:
             self.frame_integrated_spect(0)
-            self.check_scalar_not_nan
 
     def calculate_zeros(self, zero="still to search", error=0.01, frame=0):
 
@@ -1055,6 +1095,7 @@ class SST_data_from_multiple_fits_files():
         self.ccp_frame(frame, Show=False)
         plt.imshow(self.current_ccp,origin='lower')
         plt.plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color)
+        plt.show()
 
     def stand_dev_quiet_sun(self, option='wavl'):
         # option='area' or 'wavl'
@@ -1783,6 +1824,7 @@ def time_to_minutes(_time):
 def get_TIME(sst_data):
     TIME = time_to_minutes(sst_data._time)
     TIME -= TIME[0]
+    sst_data.TIME = TIME
     return TIME
 
 def minutes_to_time_string(minutes, start=0):
