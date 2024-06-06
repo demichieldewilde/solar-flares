@@ -1801,6 +1801,8 @@ def correct_flare_start(time, name):
         Dt = 5 #
     elif '9u' in name:
         Dt = 7 #
+    elif "17a" in name:
+        Dt = 0# 16:25:24 - 
     elif "17" in name:
         Dt = 3 #
     elif "15" in name:
