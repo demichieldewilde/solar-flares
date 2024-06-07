@@ -572,6 +572,7 @@ class SST_data_from_multiple_fits_files():
             self.shape = shape
         else:
             s = np.shape(self.datacube(0))
+            print(f'{s=}')
             self.shape = (number_of_frames, 1 , s[-3], s[-2], s[-1]) if not with_stokes else (number_of_frames, '??' , s[0], s[1], s[2])
         print(f"the shape of the data is {self.shape}")
         
@@ -821,13 +822,7 @@ class SST_data_from_multiple_fits_files():
     def set_boundary_original(self, methode = 'search', arguments=None):
 
         if methode == 'search':
-            error = arguments.get('error', 0.001) if arguments is not None else 0.001
-            ind = arguments.get('index_of_zero', 0) if arguments is not None else 0
-            self.zeros = self.calculate_zeros(error=error)
-            print(f'{self.zeros = }')
-            self._boundary_per_frame = True
-            self.calculate_boundary(error=error, ind=ind)
-
+            self._search_boundary(arguments)
         elif methode == 'By_user':
             quadrilateral_vertices = arguments
             self.zeros=[]
@@ -841,7 +836,7 @@ class SST_data_from_multiple_fits_files():
             self.boundary = np.ones(self.shape[-2:])
             print()
             self._boundary_per_frame = False
-            
+
         else:
             raise ValueError(f'The provided boundary methode {methode} is not implemented!')
 
@@ -849,6 +844,15 @@ class SST_data_from_multiple_fits_files():
 
 
         self.plot_boundary()
+
+    def _search_boundary(self, arguments):
+        error = arguments.get('error', 0.001) if arguments is not None else 0.001
+        ind = arguments.get('index_of_zero', 0) if arguments is not None else 0
+        self.zeros = arguments.get('zeros', self.calculate_zeros(error=error)) if arguments is not None else self.calculate_zeros(error=error)
+        print(f'{self.zeros = }')
+        self._boundary_per_frame = True
+        self._zero_per_frame = 'zeros' not in arguments
+        self.calculate_boundary(error=error, ind=ind)
 
     def check_scalar_not_nan(self):
         if hasattr(self, 'scalar'):
@@ -921,7 +925,8 @@ class SST_data_from_multiple_fits_files():
     def calculate_boundary(self, error=0.001, frame=0, ind=0):
         if not self._boundary_per_frame:
             return self.boundary
-        self.zeros = self.calculate_zeros(error=error, frame=frame)
+        if self._zero_per_frame:
+            self.zeros = self.calculate_zeros(error=error, frame=frame)
         # print(f"calculation of the boundary and zero for frame {frame}")
         try:
             if np.any(np.isnan(self.zeros)):
