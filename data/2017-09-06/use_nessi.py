@@ -1802,11 +1802,15 @@ def correct_flare_start(time, name):
     elif '9u' in name:
         Dt = 7 #
     elif "17a" in name:
-        Dt = 0# 16:25:24 - 
+        Dt = 25+7+24/60 # 16:25:24 - 15:53
     elif "17" in name:
         Dt = 3 #
     elif "15" in name:
         Dt = -23.4 # 2015-06-24T14:49 - 15:12
+    # elif "14a in name:
+    #     Dt =  # 
+    elif "14" in name:
+        Dt = 4 #   2014-06-10 & SPoCA 13052 & X1.5& 12:36/12:52/13:03 &12:40/12:58&100\% & (-879'', -305'') & 0.139& \Halpha & 4.0\\       
     else:
         print("no time correction factor added.")
         Dt = 0

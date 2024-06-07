@@ -13,6 +13,14 @@ from scipy.signal import convolve2d
 sr = solar_radius = 959.63
 area_factor = 60**2/np.pi/sr**2
 
+def element_from_name(name):
+    if 'CaK' in name:
+        return 'CaK(2)' if '(2)' in name else 'CaK'
+    lines = ['Ha', 'CaI', "Fe6173", "Hbeta"]
+    for line in lines:
+        if line in name:
+            return "CaIR" if line=="CaI" else line
+    raise ValueError(f'The given name {name} is not known as a spectral name (yet).')
 
 def disgard_cont_point(name, data):
     # FOV_spectrum
@@ -20,8 +28,34 @@ def disgard_cont_point(name, data):
 
     # load quiet_sun profile
     data[f'quiet_sun_{name}'] = data[f'quiet_sun_{name}'][:, :-1]
+    
+    # correcting nessi profile
+    data[f'nessi_{name}'] = data[f'nessi_{name}'][:,:-1]
 
+def split_data_in_two_lines(name, data, wav_split, lines):
+    lines.append(f"{name}(2)")
+    
+    wav_sst = data[f'quiet_sun_{name}'][0]
+    ind_sst = np.where(wav_sst > wav_split)[0][0]
+    
+    # splitting FOV_spectrum
+    data[f'FOV_{name}(2)'] = data[f'FOV_{name}'][:, ind_sst:]
+    data[f'FOV_{name}'] = data[f'FOV_{name}'][:, :ind_sst]
 
+    # splitting quiet_sun profile
+    data[f'quiet_sun_{name}(2)'] = data[f'quiet_sun_{name}'][:, ind_sst:]
+    data[f'quiet_sun_{name}'] = data[f'quiet_sun_{name}'][:, :ind_sst]
+    
+    wav_nessi = data[f'nessi_{name}'][0]
+    ind_nessi = np.where(wav_nessi > wav_split)[0][0]
+
+    # splitting nessi profile
+    data[f'nessi_{name}(2)'] = data[f'nessi_{name}'][:,ind_nessi:]
+    data[f'nessi_{name}'] = data[f'nessi_{name}'][:,:ind_nessi]
+
+def name_no2(name):
+    return name[:-3] if name[-3:] == '(2)' else name
+        
 sr = solar_radius = 959.63
 area_factor = 60**2/np.pi/sr**2
 
@@ -33,7 +67,7 @@ hence 1/53.544360373477076
 def contrast_FOV_data(name_of_line, data, quiet_sun_subtraction=True, num=100, normal=True, scale_pix_to_saas=1/53.4):
     FOV = data[f"FOV_{name_of_line}"]
     wav_qs, qs_spec, std_qs = data[f"quiet_sun_{name_of_line}"]
-    time = data[f"TIME_{name_of_line}"]
+    time = data[f"TIME_{name_no2(name_of_line)}"]
     wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
     std_qs *= scale_pix_to_saas
 
