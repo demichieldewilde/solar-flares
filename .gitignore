@@ -1,4 +1,4 @@
-*
+# *
 # neglect all files except .fits, .pdf, and .png
 !*.py
 !*.ipynb  # Add other file types you want to track if needed
@@ -14,11 +14,12 @@
 *.txt
 *.sav
 *.doc
+*.icube
 *.zip
 *.mp4
 *.f0
 *.fcube
 *.pro
 *.npz
-**/onnutig/*
+**/onnutig/
 **/__pycache__/*
