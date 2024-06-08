@@ -194,14 +194,19 @@ def cut_off_data(data, up_lim=None, down_lim=None):
     cutoff_data = np.where(data < down_lim, down_lim, cutoff_data)
     return cutoff_data
 
-def visualize_analysis(res, voight, wav, time, name):
+def visualize_analysis(res, voight, wav, time, name, non_centered=True):
     fig, ax = plt.subplots()
-    if element_from_name(name) in ["Fe", "CaIR", "Ha"]:
-        vlim = max(-np.percentile(res, 3), np.percentile(res, 97))
-        print(f"{vlim = }")
+    if un2.element_from_name(name) in ["Fe", "CaIR", "Ha"]:
+        if non_centered:
+            vmax = np.percentile(res, 97)
+            vmin = np.percentile(res, 3)
+        else:
+            vmax = max(-np.percentile(res, 3), np.percentile(res, 97))
+            vmin =-vmax
+        print(f"{vmax = }, {vmin = }")
         c = ax.imshow(np.array(res), aspect="auto", cmap='RdBu_r', origin='lower', extent=(wav[0], wav[-1], time[0], time[-1]),
-                    vmax=vlim, vmin=-vlim)
-        voight = cut_off_data(voight)
+                    vmax=vmax, vmin=vmin)
+        voight = cut_off_data(voight, up_lim=vmax, down_lim=vmin)
     else:
         c = ax.imshow(np.array(res), aspect="auto", cmap='RdBu_r', origin='lower', extent=(wav[0], wav[-1], time[0], time[-1]))
     # pcm = ax.pcolormesh(X, Y, Z, cmap='RdBu_r',vmin=-np.max(Z),  shading='auto')
