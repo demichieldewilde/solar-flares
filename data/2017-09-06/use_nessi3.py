@@ -846,13 +846,10 @@ class SST_data_from_multiple_fits_files():
         self.plot_boundary()
 
     def _search_boundary(self, arguments):
-        error = arguments.get('error', 0.001) if arguments is not None else 0.001
-        ind = arguments.get('index_of_zero', 0) if arguments is not None else 0
-        self.zeros = arguments.get('zeros', self.calculate_zeros(error=error)) if arguments is not None else self.calculate_zeros(error=error)
-        print(f'{self.zeros = }')
+        self.arguments=arguments
         self._boundary_per_frame = True
         self._zero_per_frame = 'zeros' not in arguments
-        self.calculate_boundary(error=error, ind=ind)
+        self.calculate_boundary()
 
     def check_scalar_not_nan(self):
         if hasattr(self, 'scalar'):
@@ -922,7 +919,14 @@ class SST_data_from_multiple_fits_files():
 
             return [zero]
 
-    def calculate_boundary(self, error=0.001, frame=0, ind=0):
+    def calculate_boundary(self, frame=0):
+        
+        error = self.arguments.get('error', 0.001) if self.arguments is not None else 0.001
+        ind = self.arguments.get('index_of_zero', np.arange(len(self._wavel))) if self.arguments is not None else np.arange(len(self._wavel))
+        self.zeros = self.arguments.get('zeros', self.calculate_zeros(error=error)) if self.arguments is not None else self.calculate_zeros(error=error)
+        print(f'{self.zeros = }')
+        assert(len(ind)>0)
+        
         if not self._boundary_per_frame:
             return self.boundary
         if self._zero_per_frame:
@@ -940,8 +944,11 @@ class SST_data_from_multiple_fits_files():
         xmax = shape[4]
 
         zero = self.zeros[0]
-        # intensity_match(zero, self.datacube(frame)[:,y,x], error=error)
-        R = np.where(np.abs(self.datacube(frame)[ind,:,:]-zero[ind])< error * np.average(self.datacube(frame)), 0, 1)
+        
+        R = np.ones(self.datacube(frame).shape[1:])
+        for i in ind:
+                R *= np.where(np.abs(self.datacube(frame)[i,:,:]-zero[i])< error * np.average(self.datacube(frame)), 1, 0)
+        R = 1 - R    
         self.boundary = R
         return R
 

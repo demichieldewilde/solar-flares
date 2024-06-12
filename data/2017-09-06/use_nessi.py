@@ -663,55 +663,50 @@ class SST_data():
         suppose this collor is not different for any of the frames. So we find the color in frame = 0
         '''
 
-        # OPTION 1 NAN
-
-
         if np.any(np.isnan(self.datacube[0, 0,:,:,:])):
             return [np.nan]
 
-        # OPTION 2 FAKE OUTSIDE DATA
-        else:
+        xmax=np.shape(self.datacube)
+        ymax=xmax[3]
+        xmax = xmax[4]
+
+        if zero=="still to search":
+            # to find zeros. If not the param
+            #
+            # zero: gives an RGB value of the outside. any pixel that match it is excluded
+            #
+            # first we secure the "outside" of the frame so we can neglec it
+            # most probable gess is on the outside lines in the middels. and check by looking to its neigbours.
+
+            pixels_to_check = [[0,ymax//2],[xmax//2,0],[0+5,ymax//2],[xmax//2,0+5],[0,ymax//2+5],[xmax//2,0+5],
+                                [0,ymax//2-5],[xmax//2-5,0],[0+5,ymax//2+5],[xmax//2+5,0+5],[0+5,ymax//2-5],[xmax//2-1,0+5]]
+
             frame = 0
 
 
-            xmax=np.shape(self.datacube)
-            ymax=xmax[3]
-            xmax = xmax[4]
+            # as guess we take the first and check if they all match
+            zero = self.datacube[frame, 0,:,ymax//2,0]
+            possible = True
 
-            if zero=="still to search":
-                # to find zeros. If not the param
-                #
-                # zero: gives an RGB value of the outside. any pixel that match it is excluded
-                #
-                # first we secure the "outside" of the frame so we can neglec it
-                # most probable gess is on the outside lines in the middels. and check by looking to its neigbours.
+            for item in pixels_to_check:
+                x,y = item
+                # print("zero:", zero)
+                # print("vergelijk met:", self.datacube[frame, 0,:,y,x])
 
-                pixels_to_check = [[0,ymax//2],[xmax//2,0],[0+5,ymax//2],[xmax//2,0+5],[0,ymax//2+5],[xmax//2,0+5],
-                                    [0,ymax//2-5],[xmax//2-5,0],[0+5,ymax//2+5],[xmax//2+5,0+5],[0+5,ymax//2-5],[xmax//2-1,0+5]]
-
-                # as guess we take the first and check if they all match
-                zero = self.datacube[frame, 0,:,ymax//2,0]
-                possible = True
-
-                for p in range(len(pixels_to_check)):
-                    x,y=pixels_to_check[p]
-                    # print("zero:", zero)
-                    # print("vergelijk met:", self.datacube[frame, 0,:,y,x])
-
-                    if not np.all(zero == self.datacube[frame, 0,:,y,x]):
-                        possible = False
-                    # print("en ", possible, "bevonden")
+                if not np.all(zero == self.datacube[frame, 0,:,y,x]):
+                    possible = False
+                            # print("en ", possible, "bevonden")
 
 
-                if not possible:
-                    print("IMPORTANT MESSAGE\nThe middel of the outside lines is in the data.\n Give manualy the RGB value of the outside in.")
-                    print("zero was:", zero)
-                    return #?????
+            if not possible:
+                print("IMPORTANT MESSAGE\nThe middel of the outside lines is in the data.\n Give manualy the RGB value of the outside in.")
+                print("zero was:", zero)
+                return #?????
 
-            return [zero]
+        return [zero]
 
 
-    def calculate_boundary(self, for_all_frame=False):
+    def calculate_boundary(self, for_all_frame=False, exclude_wav=[]):
         frame = 0
         if np.any(np.isnan(self.zeros)):
             return np.where(np.isnan(self.datacube[frame,0,0,:,:]), 0, 1)
@@ -720,15 +715,16 @@ class SST_data():
         ymax=shape[3]
         xmax = shape[4]
 
-        if for_all_frame:
-            frames = range(shape[0])
-        else:
-            frames = [0]
-
+        frames = range(shape[0]) if for_all_frame else [0]
         zero = self.zeros[0]
+        
+        l = len(self._wavel)
 
-        R = np.where(self.datacube[0,0,0,:,:]==zero[0], 0, 1)
-
+        R = np.ones(self.shape[3:])
+        for i in range(l):
+            if i not in exclude_wav:
+                R *= np.where(self.datacube[0,0,i,:,:]==zero[i], 1, 0)
+        R = 1 - R        
         return R
 
 
@@ -1805,6 +1801,8 @@ def correct_flare_start(time, name):
         Dt = 25+7+24/60 # 16:25:24 - 15:53
     elif "17" in name:
         Dt = 3 #
+    elif "15a" in name:
+        Dt = 14 # 2015-09-27T10:34 - 10:20
     elif "15" in name:
         Dt = -23.4 # 2015-06-24T14:49 - 15:12
     elif "14a" in name:
@@ -1828,6 +1826,8 @@ def get_full_path(name):
         return "D:\solar flares\data\\2019-05-06"
     elif "13" in name:
         return "D:\solar flares\data\\2013-06-30"
+    elif "15a" in name:
+        return "D:\solar flares\data\\2015-09-27" 
     elif "15" in name:
         return "D:\solar flares\data\\2015-06-24" 
     elif "14a" in name:
