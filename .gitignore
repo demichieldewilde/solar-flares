@@ -23,3 +23,5 @@
 *.npz
 **/onnutig/
 **/__pycache__/*
+literature_review/
+
