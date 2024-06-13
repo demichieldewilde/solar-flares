@@ -338,7 +338,7 @@ def clv_fit(mu, theor_line):
 
 
 
-def gess_filters(n_wav):
+def guess_filters(n_wav):
     sd = n_wav/8
     return [[n_wav/6 - 0.5, sd], [3 * n_wav/6 - 0.5, sd], [5 * n_wav / 6 - 0.5, sd]]
 

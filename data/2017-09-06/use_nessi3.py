@@ -864,7 +864,9 @@ class SST_data_from_multiple_fits_files():
             self.frame_integrated_spect(0)
 
     def calculate_zeros(self, zero="still to search", error=0.01, frame=0):
-
+        if self.arguments is not None:
+            if "zeros" in self.arguments:
+                return self.arguments["zeros"]
         '''
         Here there are 2 posibilities for the 'outside' of te frame. Either these are denoted by NaN and then
         averaging is simpel by a numpy.mean() function wich only include the needed pixel
@@ -923,8 +925,7 @@ class SST_data_from_multiple_fits_files():
         
         error = self.arguments.get('error', 0.001) if self.arguments is not None else 0.001
         ind = self.arguments.get('index_of_zero', np.arange(len(self._wavel))) if self.arguments is not None else np.arange(len(self._wavel))
-        self.zeros = self.arguments.get('zeros', self.calculate_zeros(error=error)) if self.arguments is not None else self.calculate_zeros(error=error)
-        print(f'{self.zeros = }')
+        self.zeros = self.calculate_zeros(error=error)
         assert(len(ind)>0)
         
         if not self._boundary_per_frame:
@@ -942,15 +943,15 @@ class SST_data_from_multiple_fits_files():
         shape=self.shape
         ymax=shape[3]
         xmax = shape[4]
-
-        zero = self.zeros[0]
+        R0 = np.ones(self.datacube(frame).shape[1:])
         
-        R = np.ones(self.datacube(frame).shape[1:])
-        for i in ind:
-                R *= np.where(np.abs(self.datacube(frame)[i,:,:]-zero[i])< error * np.average(self.datacube(frame)), 1, 0)
-        R = 1 - R    
-        self.boundary = R
-        return R
+        for zero in self.zeros:            
+            R = np.ones(self.datacube(frame).shape[1:])
+            for i in ind:
+                    R *= np.where(np.abs(self.datacube(frame)[i,:,:]-zero[i])< error * np.average(self.datacube(frame)), 1, 0)
+            R0 *= 1 - R    
+        self.boundary = R0
+        return R0
 
 
     def expect_pix(self, frame=0):

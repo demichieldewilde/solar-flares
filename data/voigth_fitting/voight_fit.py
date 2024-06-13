@@ -206,7 +206,7 @@ def visualize_analysis(res, voight, wav, time, name, non_centered=True):
         print(f"{vmax = }, {vmin = }")
         c = ax.imshow(np.array(res), aspect="auto", cmap='RdBu_r', origin='lower', extent=(wav[0], wav[-1], time[0], time[-1]),
                     vmax=vmax, vmin=vmin)
-        voight = cut_off_data(voight, up_lim=vmax, down_lim=vmin)
+        # voight = cut_off_data(voight, up_lim=vmax, down_lim=vmin)
     else:
         c = ax.imshow(np.array(res), aspect="auto", cmap='RdBu_r', origin='lower', extent=(wav[0], wav[-1], time[0], time[-1]))
     # pcm = ax.pcolormesh(X, Y, Z, cmap='RdBu_r',vmin=-np.max(Z),  shading='auto')
