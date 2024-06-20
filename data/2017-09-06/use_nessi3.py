@@ -325,10 +325,9 @@ class linestudier():
         fov_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
         dx = (X[1:,1:] - X[0:-1,0:-1])
         dy = (Y[1:,1:] - Y[0:-1,0:-1])
-        areafactor = np.nansum(dx*dy+boundary) / np.pi
-        print(areafactor)
+        self.fov_areafactor = np.nansum(dx*dy+boundary) / np.pi
         # areafactor = 1 / np.pi * (X[-1,-1]-X[0,0]) * (Y[-1,-1]-Y[0,0])
-        self.spectr_fov = -self.saas.get_diff_spectra_fov(X,Y,fov_spectra) / areafactor
+        self.spectr_fov = -self.saas.get_diff_spectra_fov(X,Y,fov_spectra) / self.fov_areafactor
         plt.plot(self.sst_wav, self.saas_profile, label="SAAS profile NESSI")
         plt.plot(self.sst_wav, self.spectr_fov, label="FOV profile NESSI")
         plt.legend()

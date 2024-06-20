@@ -57,46 +57,98 @@ def name_no2(name):
     return name[:-3] if name[-3:] == '(2)' else name
         
 sr = solar_radius = 959.63
-area_factor = 60**2/np.pi/sr**2
+area_factor = 60**2/np.pi/sr**2    
+
+def most_quiet_flare_time(name):
+    """Returns the indices over which to average to get a good quiet pattern to calculate the contrast profile from.
+
+    Args:
+        name (string): name of the line
+
+    Returns:
+        [t0, t1]: begin and end time of the quiet flare time
+    """
+    if '19'in name:
+        return [-10,-5]
+    elif '13' in name:
+        return [60,65]
+    elif '9u' in name:
+        return [50,55]
+    elif "17a" in name:
+        return [100,110]
+    elif "17" in name:
+        return [43,50]
+    elif "15a" in name:
+        return [35,40]
+    elif "15" in name:
+        return [70,80]
+    elif "14a" in name:
+        return [-90, -75]
+    elif "14" in name:
+        return [4.5,6]
+    else:
+        raise NameError(f'WRONG NAME: the line {name} had no most quiet flare time defined.')
+    
+def most_quiet_FD_spectr(FD_spec, name_of_line, time):
+    T = most_quiet_flare_time(name_of_line)
+    R = np.where(time >= T[0] | time <= T[1], 1, 0)
+    mq_FD = np.average(FD_spec, axis=0, weights=R)
+    return mq_FD
+    
+def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, area_factor=60**2/np.pi/959.63**2, add_noise=False): 
+    wav, DFD, time, line, std = difference_FD_data(name_of_line, data, quiet_sun_subtraction, area_factor, add_noise)
+    saas = line
+    
+    FD = DFD + line
+    
+    mq_FD = most_quiet_FD_spectr(FD, name_of_line, time)
+    
+    contr_prof = FD / mq_FD
+    
+    return wav, contr_prof, time, line, (std/mq_FD if std is not None else None)
+
+def difference_FD_data(name_of_line, data, quiet_sun_subtraction=True, area_factor=60**2/np.pi/959.63**2, add_noise=False):            
+    wav, DFOV, time, line, std = difference_FOV_data(name_of_line, data, quiet_sun_subtraction)
+
+    # Correct normalization for area and mu-value (all intensities are normalized on the first wavelength)
+    #   -correction for area is area_factor
+    # thereby we have area_factor * clv(at wav_qs[0])/1 thus
+    DFD = area_factor * DFOV
+    
+    if add_noise:
+        noise = np.random.normal(loc=0, scale=std[0], size=(DFD.shape))
+        DFD += noise
+
+    return wav, DFD, time, line, (std if add_noise else None)
 
 '''
 The scale_pix_to_saas is the number by which the standard deviation has to be multiplied to get to the the std of the saas observation
 it should be the inverse of square root of (number of pixels in sst (1920×1200 CHROMIS or 1k × 1k CRISP) * areafactor (60**2/np.pi/sr**2) ) 
 hence 1/53.544360373477076
 '''
-def contrast_FOV_data(name_of_line, data, quiet_sun_subtraction=True, num=100, normal=True, scale_pix_to_saas=1/53.4):
+def difference_FOV_data(name_of_line, data, quiet_sun_subtraction=True, num=100, scale_pix_to_saas=1/53.4):
     FOV = data[f"FOV_{name_of_line}"]
     wav_qs, qs_spec, std_qs = data[f"quiet_sun_{name_of_line}"]
     time = data[f"TIME_{name_no2(name_of_line)}"]
-    wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
+    wav_nessi, fov_nessi, saas_nessi = data[f"nessi_{name_of_line}"]
     std_qs *= scale_pix_to_saas
 
     if quiet_sun_subtraction:
         qs_spectc =  qs_spec
         wav_qsc = wav_qs
     else:
-        qs_spectc = dc_nessi * clv_nessi
+        qs_spectc = fov_nessi
         wav_qsc = wav_nessi
 
     wav = smooth_wavelengths(wav_qs, wav_nessi, num)
     
-    if normal:  
-        DFOV = np.array([interp1d(wav_qs, FOV[i,:])(wav)  for i in range(np.shape(FOV)[0])]) - interp1d(wav_qsc, qs_spectc)(wav)
-    else:
-        DFOV = np.array([interp1d(wav_qs, FOV[i,:])(wav)  for i in range(np.shape(FOV)[0])]) / interp1d(wav_qsc, qs_spectc)(wav) -1
-        
-    line = interp1d(wav_qsc, qs_spectc)(wav)
+    DFOV = np.array([interp1d(wav_qs, FOV[i,:])(wav)  for i in range(np.shape(FOV)[0])]) - interp1d(wav_qsc, qs_spectc)(wav)
+
+    line = interp1d(wav_nessi, saas_nessi)(wav)
     std = interp1d(wav_qs, std_qs)(wav)
-    # Correct normalization for area and mu-value (all intensities are normalized on the first wavelength)
-    #   -correction factor for average vs quiet sun normalization is 1/(dc_nessi[0] * clv_nessi[0])
-    #   -correction factor for mu value is clv(at wav_qs[0])/1
-    # thereby we have 1/(dc_nessi[0] * clv_nessi[0]) * clv[0]/1 thus
-    if 'CaK' in name_of_line:
-        corr = 1/dc_nessi[-1] 
-    else:
-        corr = 1/ ((dc_nessi[0] + dc_nessi[-1]) / 2)
-    print(f"the correction factor is {corr}")
-    return wav, DFOV*corr , time, line, std*corr
+    # Correct normalization for mu-value has already been done by using the gauge to NESSI
+    # Area normalization should still happen though!
+    return wav, DFOV , time, line, std
 
 def smooth_wavelengths(wav1, wav2, num=100):
     start = max(np.min(wav1), np.min(wav2))
@@ -173,23 +225,6 @@ def degenerate_contrast_as_Harps(name_of_line, data, quiet_sun_subtraction=True,
         DFD += noise
 
     return wav, smooth(DFD), time, line, (std if add_noise else None)
-    
-
-def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=True, area_factor=60**2/np.pi/959.63**2,normal=True, add_noise=False):            
-    wav, DFOV, time, line, std = contrast_FOV_data(name_of_line, data, quiet_sun_subtraction, normal=normal)
-    wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
-
-    line = interp1d(wav_nessi, dc_nessi)(wav)
-    # Correct normalization for area and mu-value (all intensities are normalized on the first wavelength)
-    #   -correction for area is area_factor
-    # thereby we have area_factor * clv(at wav_qs[0])/1 thus
-    DFD = area_factor * DFOV
-    
-    if add_noise:
-        noise = np.random.normal(loc=0, scale=std[0], size=(DFD.shape))
-        DFD += noise
-
-    return wav, DFD, time, line, (std if add_noise else None)
     
 def get_Harps(name_of_line):
     # Harps starts at 8:57 and and at 14:33 UT

@@ -1743,7 +1743,11 @@ def save_for_further_analysis(sst_data, theor_line):
     filename = get_file_path_line_data(f"quiet_sun_{sst_data.name_of_line}")
     if theta[1] != 0:
         raise ValueError(f'theta[1]={theta[1]} should be zero!')
-    np.save(filename, np.array([sst_data._wavel-theta[0], sst_data.quiet_spect/theta[2], sst_data.std_quiet_sun]))
+    np.save(filename, np.array([sst_data._wavel-theta[0], sst_data.quiet_spect/theta[2], sst_data.std_quiet_sun/theta[2]]))
+    
+    # small comparison for area factor
+    print(f'The areafactor for this flare is {theor_line.fov_areafactor} compared to 60**2/np.pi/959.63**2 = {60**2/np.pi/959.63**2}.\
+        However normaly this should be alike and since the gauge is bij the Quiet sun, the conversion should be oké.')
 
     # save nessi best clv spectrum and full disk
     filename = get_file_path_line_data(f"nessi_{sst_data.name_of_line}")
