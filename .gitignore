@@ -1,7 +1,6 @@
-# *
-# neglect all files except .fits, .pdf, and .png
+# most importantly
 !*.py
-!*.ipynb  # Add other file types you want to track if needed
+!*.ipynb
 !*.jpg
 !*.png
 
@@ -11,6 +10,7 @@
 *.pdf
 *.idlsave
 *.npy
+*.npz
 *.txt
 *.sav
 *.doc
@@ -20,8 +20,8 @@
 *.f0
 *.fcube
 *.pro
-*.npz
 **/onnutig/
-**/__pycache__/*
-literature_review/
+__pycache__/
+**/FOV/*
+literature_review/*
 

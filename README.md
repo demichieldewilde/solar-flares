@@ -1,20 +1,30 @@
+**Integrated full disc Sun-as-a-star flare observations synthesised
+from a small field of view**
+
 This code is used for the data analysis of the paper "Integrated full disc Sun-as-a-star flare observations synthesised
 from a small field of view" By Michiel De Wilde, Alexander G.M. Pietrow , Malcolm Keith Druett , and Adur Pastor Yabar
 
 and badly written by Michiel ;)
 
-Only the data is not included for memory and legal reasons. 
-Some of data is free available for example for the flares 
+-----------------------------------------------------------------------------------------------
+
+Only the observational data is not included for memory and copyright reasons. 
+Some of these data is free available for example for the flares 
     -2011-08-06
     -2014-09-06
     -2015-06-24
 
-These thus can be repeated yourself. 
-go to data to investigate. There the .ipynb files for each line describe the process. 
-The 2014-09-06 and the 2015-06-24 are the best to have a look at. 
+For those flare the full analysis thus can be repeated yourself. 
 
-After the basic gauging to NESSI and calculating the FOV_spectrum_over_time all flares are 
-voight fitted in the folder data/voight_fitting and thereafter plotted with their full 
-analysis in data/full_analysis. 
+Schematically what we have done is the following:
+
+    1. Gauge the quiet sun to a NESSI profile for each line in each flare. These are all notebooks, that can be found under a date
+    2. Create sun-as-a-star datasets from this gauge (most .npy, .npz files in the same folder) for further investigation
+    3. Fitted a voight profile to the difference in Field Of View (FOV) en quiet sun, This difference are the contrastprofiles. We also calculated the residues. (in folder voight_fitting). 
+    4. Plotting the full analysis of the flare (in folder full_analysis)
+
+
+When you want to take a look I advise the 2014-09-06 and the 2015-06-24, these are the best structured, 
+and therefore the most easy to understand. 
 
 data/optimal_with is a side project. 

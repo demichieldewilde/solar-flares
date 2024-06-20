@@ -429,9 +429,9 @@ def Harps_contrast_plots(names_of_lines_list, data, quiet_sun_subtraction_list, 
 import matplotlib.patches as patches
 
 # Function to plot rectangles representing the field of view
-def plot_fov(ax, x, y, width, height, color='red', label=''):
+def plot_fov(ax, x, y, width, height, color='red', label='', angle=0):
     rect = patches.Rectangle((x - width / 2, y - height / 2), width, height,
-                             linewidth=1, edgecolor=color, facecolor='none', label=label)
+                             linewidth=1, edgecolor=color, facecolor='none', label=label, angle=angle)
     ax.add_patch(rect)
     ax.text(x, y+height, label, ha='center', va='center', fontsize=8)
 
@@ -449,7 +449,7 @@ def plot_mu_grid(ax, mu):
         plot_centrical_circ(ax, i, 0, 0)
 
 # Function to create the sun plot
-def create_sun_plot(centers, flarelabels, z=60/959.63):
+def create_sun_plot(centers, flarelabels, z=60, sr=959.63, angels=None):
     fig, ax = plt.subplots(figsize=(5,5))
 
     # Plot the yellow disk for the sun
@@ -458,7 +458,8 @@ def create_sun_plot(centers, flarelabels, z=60/959.63):
 
     # Plot rectangles for the field of view at various locations
     for i, center in enumerate(centers):
-        plot_fov(ax, x=center[0], y=center[1], width=z, height=z, label=flarelabels[i])
+        angle = angels[i] if angels is not None else 0
+        plot_fov(ax, x=center[0]/sr, y=center[1]/sr, width=z/sr, height=z/sr, label=flarelabels[i], angle=angle)
 
     # plot mu grid
     plot_mu_grid(ax, mu = np.arange(0, 1.05, 0.1))

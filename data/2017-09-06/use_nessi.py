@@ -338,7 +338,7 @@ def clv_fit(mu, theor_line):
 
 
 
-def gess_filters(n_wav):
+def guess_filters(n_wav):
     sd = n_wav/8
     return [[n_wav/6 - 0.5, sd], [3 * n_wav/6 - 0.5, sd], [5 * n_wav / 6 - 0.5, sd]]
 
@@ -1733,24 +1733,24 @@ def add_enters(s, length_row):
     return s
 
 def save_for_further_analysis(sst_data, theor_line):
+    # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
+    theta = sst_data.theta_nessi_to_quiet_sun
 
     # check that FOV_spectrum is saved:
     sst_data.FOV_spectrum
 
     # save quiet_sun profile
     filename = get_file_path_line_data(f"quiet_sun_{sst_data.name_of_line}")
-    np.save(filename, np.array([sst_data._wavel, sst_data.quiet_spect, sst_data.std_quiet_sun]))
+    if theta[1] != 0:
+        raise ValueError(f'theta[1]={theta[1]} should be zero!')
+    np.save(filename, np.array([sst_data._wavel-theta[0], sst_data.quiet_spect/theta[2], sst_data.std_quiet_sun]))
 
     # save nessi best clv spectrum and full disk
-    # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
-    theta = sst_data.theta_nessi_to_quiet_sun
-
     filename = get_file_path_line_data(f"nessi_{sst_data.name_of_line}")
     if hasattr(theor_line, "spectr_fov"):
-        np.save(filename, np.array([theor_line.sst_wav+theta[0], theor_line.sst_dc*theta[2] + theta[1], theor_line.spectr_fov/theor_line.sst_dc]))
+        np.save(filename, np.array([theor_line.sst_wav, theor_line.saas_profile, theor_line.spectr_fov]))
     else:
-        np.save(filename, np.array([theor_line.sst_wav+theta[0], theor_line.sst_dc*theta[2] + theta[1], theor_line.best_fit_clv]))
-
+        raise TypeError("Use un3.linestudier!")
     # save time in minutes
     filename = get_file_path_line_data(f"TIME_{sst_data.name_of_line}")
     np.save(filename,sst_data.TIME)
