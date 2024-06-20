@@ -394,11 +394,11 @@ def fit_qs_to_NESSI(theor_line, sst_data,  frame=0):
     # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
     # theta = [0.2, 0.3, 0.89]
 
-    f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[2] * theor_line.spectr_qs + theta[1]
+    f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[1] * theor_line.spectr_qs 
                                     , kind='linear', fill_value="extrapolate")
-    f_nessi_fov = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[2] * theor_line.spectr_fov + theta[1]
+    f_nessi_fov = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[1] * theor_line.spectr_fov 
                                     , kind='linear', fill_value="extrapolate")
-    f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[2] * theor_line.saas_profile + theta[1]
+    f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[1] * theor_line.saas_profile 
                                     , kind='linear', fill_value="extrapolate")
     g = len(sst_data._wavel)
 
@@ -407,11 +407,11 @@ def fit_qs_to_NESSI(theor_line, sst_data,  frame=0):
     stds = sst_data.var_spect
     print(sst_data._wavel)
     data = [sst_data._wavel,  avs ,stds,np.zeros(g)+0.01]
-    initial_guess = np.array([np.median(sst_data._wavel) - np.median(theor_line.sst_wav), 0, np.average(avs)/np.average(theor_line.spectr_qs)])
+    initial_guess = np.array([np.median(sst_data._wavel) - np.median(theor_line.sst_wav), np.average(avs)/np.average(theor_line.spectr_qs)])
 
     mini = da.optimalisatie(data, model=f_nessi_qs, beginwaarden=initial_guess, fout_model=None, plot=False)
     print(mini)
-    theta = mini['x']
+    theta = [mini['x'][0], 0, mini['x'][1]]
     sst_data.theta_nessi_to_quiet_sun = theta
     theor_line.theta_nessi_to_quiet_sun = theta
     da.plot_fit(
