@@ -1733,6 +1733,7 @@ def add_enters(s, length_row):
     return s
 
 def save_for_further_analysis(sst_data, theor_line):
+    print("lol")
     # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
     theta = sst_data.theta_nessi_to_quiet_sun
 
