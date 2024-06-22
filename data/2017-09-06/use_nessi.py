@@ -380,6 +380,7 @@ class SST_data():
     def __init__(self, filename_fits, spectfilename, timesfilename, name_of_line, thresh=[1e-10,2e-7], boundary_methode='search', 
                  boundary_arguments=None, cont_point=None):
         self.datacube=f.getdata(get_file_path_fits(filename_fits))
+        self.shape = self.datacube.shape
         self.filename = get_file_path_fits(filename_fits)
         self.name_of_line = name_of_line
         self._number_of_frames = np.shape(self.datacube)[0]
@@ -811,7 +812,7 @@ class SST_data():
                 self.scalar =np.nanmean(self.datacube[0,0,0,:,:])
             else:
                 print(np.shape(self.datacube[0,0,0,:,:]), np.shape(R))
-                self.scalar = np.average(self.datacube[0,0,:,:,:],weights=R)
+                self.scalar = np.average([np.average(self.datacube[0,0,i,:,:],weights=R) for i in range(len(self._wavel))])
 
 
         if np.any(np.isnan(self.zeros)):
@@ -864,8 +865,6 @@ class SST_data():
         plt.show()
 
 
-
-
     '''
     Set the quiet sun condition by assinging a patch on the frame to be quiet sun.
     '''
@@ -875,6 +874,7 @@ class SST_data():
         self.ccp_frame(frame, Show=False)
         plt.imshow(self.current_ccp,origin='lower')
         plt.plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color)
+        plt.show()
 
     def stand_dev_quiet_sun(self, option='wavl'):
         # option='area' or 'wavl'
@@ -1028,6 +1028,49 @@ class SST_data():
             ax[0].set_xlim(self.line_lim)
 
         plt.show()
+        
+
+    def possible_quiet_sun_patches(self, frame, theor_line, X, restrict_to_line=False):
+
+        fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(15, 7))
+
+        fig.suptitle('Possible quiet sun patches', fontsize=16)
+
+        self.ccp_frame(frame,Show=False)
+
+        colors=['red', 'blue', 'yellow', 'orange', 'pink', 'purple', 'limegreen', 'darkgreen', 'gray']
+
+        ax[0].set_title(
+            f"spectral lines of SST frame {str(frame)}"
+            + " H\u03B1 with normalized intensity"
+        )
+        self.frame_integrated_spect(frame)
+        ax[0].plot(self._wavel, self.av_spect, '--', label='overal spectrum sst')
+        theta = [0,0,1]
+        ax[0].plot(theor_line.sst_wav + theta[0], theta[2] * theor_line.sst_dc*theor_line.sst_clv[12] + theta[1], '--', label='nessi mu = 0.76', color='black')
+
+        ax[1].imshow(self.current_ccp,origin='lower')
+        ax[1].set_title(f"COCOplot of frame {str(frame)}")
+        for t, i in enumerate(X):
+            xlim=i[0]
+            ylim=i[1]
+            color = (
+                colors[t]
+                if t < len(colors)
+                else np.array(np.random.choice(range(256), size=3)) / 255
+            )
+            ax[0].plot(
+                self._wavel,
+                self.frame_integrated_spect(frame, xlim=xlim, ylim=ylim),
+                color=color,
+                label=f'{str(color)} area',
+            )
+            ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color)
+        ax[0].legend()
+        if hasattr(self, 'line_lim') and restrict_to_line:
+            ax[0].set_xlim(self.line_lim)
+
+        plt.show()
 
 # ========================================================================
 def get_extent(filename, timeFrame=0, shift=(0,0)):
@@ -1113,6 +1156,8 @@ def give_mu_contourplot(filename, timeFrame=0, over=None, shift=(0,0), save=Fals
     '''
     shape = np.shape(over.datacube)[3:5] if over is not None else None
     MU, X, Y = get_mu_mesh(filename, timeFrame, shape=shape, shift=shift)
+    if over is not None:
+        over.xx, over.yy = X, Y
     extent = get_extent(filename, timeFrame, shift=shift)
 
     fig, ax = plt.subplots()
@@ -1626,6 +1671,7 @@ def time_to_minutes(_time):
 def get_TIME(sst_data):
     TIME = time_to_minutes(sst_data._time)
     TIME -= TIME[0]
+    sst_data.TIME = TIME
     return TIME
 
 def optimal_ax(ax, A, STD, TIME, Deltas, criterion, timelim=30):
@@ -1732,23 +1778,32 @@ def add_enters(s, length_row):
         n += 2
     return s
 
+def conv_time_wav(name):
+    # save quiet_sun profile
+    filename = get_file_path_line_data(f"quiet_sun_{name}")
+    wav =np.load(filename)[0]
+    np.save(f"line_data/wav_sst{name}")
+
 def save_for_further_analysis(sst_data, theor_line):
-    print("lol")
     # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
     theta = sst_data.theta_nessi_to_quiet_sun
 
     # check that FOV_spectrum is saved:
-    sst_data.FOV_spectrum
+    sst_data.calculate__FOV_spect_over_time(show_total_spectrum=True)
 
     # save quiet_sun profile
     filename = get_file_path_line_data(f"quiet_sun_{sst_data.name_of_line}")
     if theta[1] != 0:
         raise ValueError(f'theta[1]={theta[1]} should be zero!')
+    if not hasattr(sst_data, 'std_quiet_sun'):
+        sst_data.stand_dev_quiet_sun()
     np.save(filename, np.array([sst_data._wavel-theta[0], sst_data.quiet_spect/theta[2], sst_data.std_quiet_sun/theta[2]]))
     
     # small comparison for area factor
     print(f'The areafactor for this flare is {theor_line.fov_areafactor} compared to 60**2/np.pi/959.63**2 = {60**2/np.pi/959.63**2}.\
-        However normaly this should be alike and since the gauge is bij the Quiet sun, the conversion should be oké.')
+        \nHowever normaly this should be alike and since the gauge is bij the Quiet sun, the conversion should be oké.\
+        \nPercentage: {round(theor_line.fov_areafactor/(60**2/np.pi/959.63**2), 2)}%.')
+    np.save(get_file_path_line_data(f"areafactor_{sst_data.name_of_line}"), theor_line.fov_areafactor)
 
     # save nessi best clv spectrum and full disk
     filename = get_file_path_line_data(f"nessi_{sst_data.name_of_line}")
@@ -1757,8 +1812,11 @@ def save_for_further_analysis(sst_data, theor_line):
     else:
         raise TypeError("Use un3.linestudier!")
     # save time in minutes
+    if not hasattr(sst_data, "TIME"):
+        get_TIME(sst_data)
     filename = get_file_path_line_data(f"TIME_{sst_data.name_of_line}")
     np.save(filename,sst_data.TIME)
+    
 
 def load_for_further_analysis(names_of_lines, full_path=None):
     if full_path is None:

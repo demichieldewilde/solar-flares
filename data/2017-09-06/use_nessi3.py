@@ -450,10 +450,10 @@ def fit_qs_to_NESSI(theor_line, sst_data,  frame=0):
     ax[1].set_title(f"COCOplot of frame {str(frame)}")
     plt.show()
 
-def fit_qs_to_NESSI_cont_point(theor_line, sst_data,  frame=0):
+def fit_qs_to_NESSI_cont_point(theor_line, sst_data,  frame=0, xshift=None):
     xlim, ylim = theor_line.quiet_sun
     obs = sst_data.frame_integrated_spect(frame, xlim=xlim, ylim=ylim)
-    theta = [sst_data._wavel[-1]-theor_line.sst_wav[-1], 0,  obs[-1] /theor_line.spectr_qs[-1]]
+    theta = [(xshift if xshift is not None else sst_data._wavel[-1]-theor_line.sst_wav[-1]), 0,  obs[-1] /theor_line.spectr_qs[-1]]
     sst_data.theta_nessi_to_quiet_sun = theta
     print("the theta fit is ",theta)
 
