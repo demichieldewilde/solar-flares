@@ -828,7 +828,7 @@ class SST_data_from_multiple_fits_files():
     TODO: go to two
     '''
     def set_boundary_original(self, methode = 'search', arguments=None):
-
+        self.arguments = arguments
         if methode == 'search':
             self._search_boundary(arguments)
         elif methode == 'By_user':

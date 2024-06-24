@@ -1783,17 +1783,23 @@ def add_enters(s, length_row):
         n += 2
     return s
 
-def conv_time_wav(name):
-    # wav
-    filename_w = get_file_path_line_data(f"quiet_sun_{name}")
-    wav =np.load(filename_w)[0]
-    np.save(f"line_data/wav_sst{name}", wav)
-    # time
-    filename_t = get_file_path_line_data(f"TIME_{name}")
-    T = np.load(filename_t)
-    T = np.array([time_hulp(k) for k in T])
-    # np.save(f"line_data/time{name}", wav)
-    return filename_w, filename_t
+def conv_time_wav(name, do_wav=True, do_time = True):
+    k=[]
+    if do_wav:
+        # wav
+        filename_w = get_file_path_line_data(f"quiet_sun_{name}")
+        wav =np.load(filename_w)[0]
+        print(f'the wavelengts are {wav}')
+        np.save(f"line_data/wav_sst{name}", wav)
+        k.append(f"line_data/wav_sst{name}.npy")
+    if do_time:
+        # time
+        filename_t = get_file_path_line_data(f"TIME_{name}")
+        T = np.load(filename_t)
+        T = np.array([time_hulp(k) for k in T])
+        np.save(f"line_data/time{name}", wav)
+        k.append("line_data/time{name}.npy")
+    return k
 
 def save_for_further_analysis(sst_data, theor_line):
     # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
