@@ -57,17 +57,21 @@ def plot_data_fit_and_components(x_data, y_data, initial_guess, popt=None):
     plt.legend()
     plt.show()
     
+def exc_wings(left, rigth):
+    return range(rigth, left+1)
+
 def plot_data_fit_voigt(x_data, y_data, initial_guess, popt=None, neglect_points=[]):
     """Plot the data, fit, and components."""
     if popt is None:
         popt, _ = fit_voigt(x_data, y_data, initial_guess)
-    y_voigt = voigt(x_data, popt[0], popt[1], popt[2], popt[3])        
+    y_voigt = voigt(x_data, popt[0], popt[1], popt[2], popt[3])
     y_diff = y_data - y_voigt
     plt.figure(figsize=(10, 6))
     plt.plot(x_data, y_data, 'y.', label='Data neglected')
     plt.plot(np.delete(x_data,neglect_points, axis=0), np.delete(y_data,neglect_points, axis=0), 'b.', label='Data for fit')
-    plt.plot(x_data, y_voigt, 'g--', label='Voigt Component')
-    plt.plot(x_data, y_diff, 'r--', label='residue')
+    plt.plot(x_data, y_voigt, 'b--', label='Voigt Component')
+    a = np.average(y_data)
+    plt.plot(x_data, y_diff + 1.01*a , 'r--', label='residue (shifted)')
     plt.title('Data, Fit, and Components')
     plt.xlabel('X')
     plt.ylabel('Y')
@@ -117,32 +121,37 @@ def average_last_of_params(params, num=5, initial_guess=None, fix_ind=[]):
     return guess
 
 
-def contrast_fit_voight(wav, contrast, initial_guess, plot_rate=1000, neglect_points=[], fix_ind=[]):
+def contrast_fit_voight(wav, contrast, initial_guess, plot_rate=1000, neglect_points=[], fix_ind=[], exclude_frames=[]):
 
-    param_fit = [] 
+    param_fit = []
     y_fits = []
     residuals = []
-    
+
     for i in range( np.shape(contrast)[0]):
-        average_guess = average_last_of_params(param_fit, num=5, initial_guess=initial_guess.copy(), fix_ind=fix_ind)
-        try:            
-            w = np.delete(wav, neglect_points, axis=0)
-            C = np.delete( contrast[i], neglect_points, axis=0)
-            F = fit_voigt(w, C, average_guess)
-            param_fit.append(F)
-            
-            if i%plot_rate == plot_rate-1:
-                print(f'{param_fit[-1] = }. Here comes the plot:')
-                plot_data_fit_voigt(wav, contrast[i], average_guess, popt=F[0], neglect_points=neglect_points)
-                
-        except RuntimeError:
-            if len(param_fit) == 0:
-                print(f"At frame {i} the voight fitting was not succesfull and initial guess ({average_guess}) is used as params and as std of params. ")
-                param_fit.append((average_guess, average_guess))
-            else:
-                print(f"At frame {i} the voight fitting was not succesfull and previous params are used. ")
-                param_fit.append(param_fit[-1])              
-        popt = param_fit[-1][0]
+        if False: #i in exclude_frames:
+            k = initial_guess
+            k[0] = 0
+            popt = average_last_of_params(param_fit, num=5, initial_guess=k, fix_ind=fix_ind)
+        else:
+            average_guess = average_last_of_params(param_fit, num=5, initial_guess=initial_guess, fix_ind=fix_ind)            
+            try:            
+                w = np.delete(wav, neglect_points, axis=0)
+                C = np.delete( contrast[i], neglect_points, axis=0)
+                F = fit_voigt(w, C, average_guess)
+                param_fit.append(F)
+
+                if i%plot_rate == plot_rate-1:
+                    print(f'{param_fit[-1] = }. Here comes the plot:')
+                    plot_data_fit_voigt(wav, contrast[i], average_guess, popt=F[0], neglect_points=neglect_points)
+
+            except RuntimeError:
+                if len(param_fit) == 0:
+                    print(f"At frame {i} the voight fitting was not succesfull and initial guess ({average_guess}) is used as params and as std of params. ")
+                    param_fit.append((average_guess, average_guess))
+                else:
+                    print(f"At frame {i} the voight fitting was not succesfull and previous params are used. ")
+                    param_fit.append(param_fit[-1])              
+            popt = param_fit[-1][0]
         y_data = contrast[i]
         y_voigt = voigt(wav, popt[0], popt[1], popt[2], popt[3])
         y_fits.append(y_voigt)
@@ -151,22 +160,36 @@ def contrast_fit_voight(wav, contrast, initial_guess, plot_rate=1000, neglect_po
     try:
         return param_fit, np.array(y_fits) , np.array(residuals)
     except ValueError as error:
-        print('The lenght of those arrays does not work out')
-        t = [np.shape(k) for k in param_fit]
-        print("the shapes of the param_fits:", set(t), t)
-        t = [np.shape(k) for k in y_fits]
-        print("the shapes of the y_fits:", set(t), t )
-        t = [np.shape(k) for k in residuals]
-        print("the shapes of the residuals:", set(t) , t)
-        raise error
+        _extracted_from_contrast_fit_voight_35(param_fit, y_fits, residuals, error)
+
+
+def _extracted_from_contrast_fit_voight_35(param_fit, y_fits, residuals, error):
+    print('The lenght of those arrays does not work out')
+    t = [np.shape(k) for k in param_fit]
+    print("the shapes of the param_fits:", set(t), t)
+    t = [np.shape(k) for k in y_fits]
+    print("the shapes of the y_fits:", set(t), t )
+    t = [np.shape(k) for k in residuals]
+    print("the shapes of the residuals:", set(t) , t)
+    raise error
         
-def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_points=[], fix_ind=[]):
-    wav, DFOV , time, line, std = un2.contrast_FOV_data(name, data, quiet_sun_subtraction=False, num=40)
+def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_points=None, fix_ind=None):
+    offset -= 1 
+    if neglect_points is None:
+        neglect_points = []
+    if fix_ind is None:
+        fix_ind = []
+    wav, contr , time, line, std = un2.contrast_FD_data(name, data, quiet_sun_subtraction=False, num=40)
+    print(f'The average is {np.average(contr)}')
+    
+    exclude_frames = np.where(un2.most_quiet_frames(name, time))[0]
+    print(exclude_frames)
     # print(np.shape(wav), np.shape(DFOV), np.shape(time), np.shape(line))
     # Initial guess: [amp_v, cen_v, sigma_v, gamma_v, amp_g, cen_g, sigma_g]
     # print(np.shape(wav), np.shape(np.delete(wav, neglect_points, axis=0)), wav, np.delete(wav, neglect_points, axis=0))
     # print(np.shape(DFOV+offset), np.shape(np.delete(DFOV+offset, neglect_points, axis=1)), DFOV+offset, np.delete(DFOV+offset, neglect_points, axis=1))
-    params, voight, res = contrast_fit_voight(wav, DFOV+offset, initial_guess, plot_rate, neglect_points, fix_ind)
+    params, voight, res = contrast_fit_voight(wav, contr+offset, initial_guess, plot_rate, 
+                                              neglect_points, fix_ind, exclude_frames=exclude_frames)
     visualize_analysis(res, voight, wav, time, name)
     save_voight_fits(name, params, res)
     

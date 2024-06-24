@@ -46,7 +46,7 @@ class linestudier():
         self.neglect_atlas = neglect_atlas
         if not neglect_atlas:
             if atlas is None:
-                self.atlas = f.getdata(get_file_path_fits("D:/solar flares/data/2017-09-06/fits/solar_atlas_V1_405-1065.fits"))
+                self.atlas = f.getdata(get_file_path_fits("E:/solar flares/data/2017-09-06/fits/solar_atlas_V1_405-1065.fits"))
             else:
                 self.atlas = atlas
             atlas_w = np.arange(len(self.atlas)) * -0.003766534468 + 24700.0858041
@@ -388,10 +388,11 @@ def fix_mu_theor(theor_line, mu):
 def clv_fit(mu, theor_line):
     return np.apply_along_axis(lambda arr: interp1d(theor_line.sst_mu, arr)(mu), axis=0, arr=theor_line.sst_clv)
 
-def fit_qs_to_NESSI(theor_line, sst_data,  frame=0):
+def fit_qs_to_NESSI(theor_line, sst_data, initial_guess=None):
     import data_analysis as da
     # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
     # theta = [0.2, 0.3, 0.89]
+    frame = sst_data.quiet_sun['frame']
 
     f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[1] * theor_line.spectr_qs 
                                     , kind='linear', fill_value="extrapolate")
@@ -404,19 +405,24 @@ def fit_qs_to_NESSI(theor_line, sst_data,  frame=0):
     #To simulate a specific domain around the well we cam make the errors on the wings huge
     avs = sst_data.frame_integrated_spect(sst_data.quiet_sun['frame'], sst_data.quiet_sun['xlim'], sst_data.quiet_sun['ylim'], variation=True)
     stds = sst_data.var_spect
-    print(sst_data._wavel)
+    print(sst_data._wavel, avs, f_nessi_qs([0,1])(sst_data._wavel))
     data = [sst_data._wavel,  avs ,stds,np.zeros(g)+0.01]
-    initial_guess = np.array([np.median(sst_data._wavel) - np.median(theor_line.sst_wav), np.average(avs)/np.average(theor_line.spectr_qs)])
+    if initial_guess is None:
+        initial_guess = np.array([np.median(sst_data._wavel) - np.median(theor_line.sst_wav), np.average(avs)/np.average(theor_line.spectr_qs)])
+    else:
+        print(f'the given inital guess is {initial_guess}')
+    print(initial_guess)
 
     mini = da.optimalisatie(data, model=f_nessi_qs, beginwaarden=initial_guess, fout_model=None, plot=False)
     print(mini)
-    theta = [mini['x'][0], 0, mini['x'][1]]
+    t0 = mini['x']
+    theta = [t0[0], 0, t0[1]]
     sst_data.theta_nessi_to_quiet_sun = theta
     theor_line.theta_nessi_to_quiet_sun = theta
     da.plot_fit(
         data,
         model=f_nessi_qs,
-        theta0=theta,
+        theta0=t0,
         titel="SST quiet sun patch vs nessi (fit)",
         labelx="wavelength $[\AA]$",
         labely=" Intensity []",
@@ -438,9 +444,9 @@ def fit_qs_to_NESSI(theor_line, sst_data,  frame=0):
     ax[0].plot(sst_data._wavel, sst_data.av_spect, '--', label='sst FOV')
     ax[0].plot(sst_data._wavel, sst_data.quiet_spect, '--', label='sst quiet sun') #
 
-    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_saas(theta)(theor_line.sst_wav + theta[0]), label='NESSI saas')
-    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_qs(theta)(theor_line.sst_wav + theta[0]), label='NESSI QS')
-    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_fov(theta)(theor_line.sst_wav + theta[0]), label='NESSI FOV')
+    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_saas(t0)(theor_line.sst_wav + theta[0]), label='NESSI saas')
+    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_qs(t0)(theor_line.sst_wav + theta[0]), label='NESSI QS')
+    ax[0].plot(theor_line.sst_wav + theta[0], f_nessi_fov(t0)(theor_line.sst_wav + theta[0]), label='NESSI FOV')
     ax[0].legend()
     ax[1].imshow(sst_data.current_ccp, origin='lower')
     xlim = sst_data.quiet_sun['xlim']
@@ -777,7 +783,7 @@ class SST_data_from_multiple_fits_files():
         Total_intensity = np.sum(self.FOV_spectrum, axis=1)
         # print(Total_intensity)
         frame_max = np.where(Total_intensity == np.max(Total_intensity))[0]
-        print(f'The peak occurs at frame {frame_max} at time {self.time_of_frame(frame_max)}.')
+        print(f'The peak occurs at frame {frame_max} at time {[self.time_of_frame(i) for i in frame_max]}.')
 
         fig, ax = plt.subplots()
         ax.plot(Total_intensity)
@@ -1360,9 +1366,10 @@ from use_nessi import give_mu_contourplot
 #     '''
 #     shape = over.shape[3:5] if over is not None else None
 #     MU, X, Y = get_mu_mesh(filename, timeFrame, shape=shape)
-#     extent = get_extent(filename, timeFrame)
-
-#     fig, ax = plt.subplots()
+# #     extent = get_extent(filename, timeFrame)
+#     if over is not None:
+#         over.xx, over.yy = X, Y
+# #     fig, ax = plt.subplots()
 #     if over is not None:
 #         over.frame_integrated_spect(timeFrame)
 #         print(extent)

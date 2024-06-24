@@ -1665,6 +1665,11 @@ def multiline(xs, ys, c, ax=None, **kwargs):
 def hulp_time(string):
     return float(string[:2])*60 + float(string[3:5]) + float(string[6:8])/60
 
+def time_hulp(float_val):
+    hours, minutes = divmod(int(float_val), 60)
+    seconds = (float_val % 1) * 60
+    return f"{hours:02d}:{minutes:02d}:{seconds:02.0f}"
+
 def time_to_minutes(_time):
     return np.array([ hulp_time(t) for i,t in enumerate(_time) ])
 
@@ -1779,10 +1784,16 @@ def add_enters(s, length_row):
     return s
 
 def conv_time_wav(name):
-    # save quiet_sun profile
-    filename = get_file_path_line_data(f"quiet_sun_{name}")
-    wav =np.load(filename)[0]
-    np.save(f"line_data/wav_sst{name}")
+    # wav
+    filename_w = get_file_path_line_data(f"quiet_sun_{name}")
+    wav =np.load(filename_w)[0]
+    np.save(f"line_data/wav_sst{name}", wav)
+    # time
+    filename_t = get_file_path_line_data(f"TIME_{name}")
+    T = np.load(filename_t)
+    T = np.array([time_hulp(k) for k in T])
+    # np.save(f"line_data/time{name}", wav)
+    return filename_w, filename_t
 
 def save_for_further_analysis(sst_data, theor_line):
     # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
@@ -1800,10 +1811,11 @@ def save_for_further_analysis(sst_data, theor_line):
     np.save(filename, np.array([sst_data._wavel-theta[0], sst_data.quiet_spect/theta[2], sst_data.std_quiet_sun/theta[2]]))
     
     # small comparison for area factor
-    print(f'The areafactor for this flare is {theor_line.fov_areafactor} compared to 60**2/np.pi/959.63**2 = {60**2/np.pi/959.63**2}.\
+    print(f'The areafactor for THis flare is {theor_line.fov_areafactor} compared to 60**2/np.pi/959.63**2 = {60**2/np.pi/959.63**2}.\
         \nHowever normaly this should be alike and since the gauge is bij the Quiet sun, the conversion should be oké.\
-        \nPercentage: {round(theor_line.fov_areafactor/(60**2/np.pi/959.63**2), 2)}%.')
-    np.save(get_file_path_line_data(f"areafactor_{sst_data.name_of_line}"), theor_line.fov_areafactor)
+        \nPercentage: {round(100*theor_line.fov_areafactor/(60**2/np.pi/959.63**2), 2)}%.')
+    a = [theor_line.fov_areafactor, *theta]
+    np.save(get_file_path_line_data(f"area_theta_{sst_data.name_of_line}"), a)
 
     # save nessi best clv spectrum and full disk
     filename = get_file_path_line_data(f"nessi_{sst_data.name_of_line}")
@@ -1823,10 +1835,12 @@ def load_for_further_analysis(names_of_lines, full_path=None):
         full_path = get_full_path(names_of_lines[0])
     data = {}
     for name in names_of_lines:
-        
+        # areafactor and theta to adjust
+        data[f'area_theta_{name}'] = np.load(get_file_path_line_data(f"area_theta_{name}", full_path=full_path))
+
         # load FOV_spectrum
         filename = get_file_path_FOV(name, full_path=full_path)
-        data[f'FOV_{name}'] = np.load(filename)
+        data[f'FOV_{name}'] = np.load(filename) / data[f'area_theta_{name}'][-1]
 
         # load quiet_sun profile
         filename = get_file_path_line_data(f"quiet_sun_{name}", full_path=full_path)
@@ -1882,20 +1896,20 @@ def get_full_path(name):
     if isinstance(name, list) and len(name) > 0 and isinstance(name[0], str):
         name = name[0]
     if '17a' in name:
-        return "D:/solar flares/data/2017-09-10" 
+        return "E:/solar flares/data/2017-09-10" 
     elif '17' in name:
-        return "D:/solar flares/data/2017-09-06" 
+        return "E:/solar flares/data/2017-09-06" 
     elif '19' in name:
-        return "D:\solar flares\data\\2019-05-06"
+        return "E:\solar flares\data\\2019-05-06"
     elif "13" in name:
-        return "D:\solar flares\data\\2013-06-30"
+        return "E:\solar flares\data\\2013-06-30"
     elif "15a" in name:
-        return "D:\solar flares\data\\2015-09-27" 
+        return "E:\solar flares\data\\2015-09-27" 
     elif "15" in name:
-        return "D:\solar flares\data\\2015-06-24" 
+        return "E:\solar flares\data\\2015-06-24" 
     elif "14a" in name:
-        return "D:\solar flares\data\\2014-09-06"
+        return "E:\solar flares\data\\2014-09-06"
     elif "14" in name:
-        return "D:\solar flares\data\\2014-06-10"
+        return "E:\solar flares\data\\2014-06-10"
     else:
         raise FileNotFoundError(f'For the profided name {name} no full path was defined.')

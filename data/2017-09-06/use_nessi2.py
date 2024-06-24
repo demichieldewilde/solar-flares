@@ -59,6 +59,29 @@ def name_no2(name):
 sr = solar_radius = 959.63
 area_factor = 60**2/np.pi/sr**2    
 
+def test_contrast(data, name_of_line):
+    wav, DFD, time, line, std = difference_FD_data(name_of_line, data, False)
+    plt.plot(wav, DFD[0]  , label='DFD_0')
+    plt.plot(wav, DFD[-1] , label='DFD_-1')
+    plt.legend()
+    plt.show()
+    FOV = data[f"FOV_{name_of_line}"]
+    wav_qs, qs_spec, std_qs = data[f"quiet_sun_{name_of_line}"]
+    time = data[f"TIME_{name_no2(name_of_line)}"]
+    wav_nessi, fov_nessi, saas_nessi = data[f"nessi_{name_of_line}"]
+    plt.plot(wav_qs, FOV[0], label='FOV 0')
+    plt.plot(wav_qs, FOV[-1], label='FOV -1')
+    plt.plot(wav_qs, qs_spec, label='quiet sun')
+    plt.plot(wav_nessi, fov_nessi, label='FOV nessi')
+    plt.plot(wav_nessi, saas_nessi, label='saas nessi')
+    plt.legend()
+    plt.show()
+    wav, contr, time, line, std = contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False)
+    plt.plot(wav, contr[0], label='contr 0')
+    plt.plot(wav, contr[-1], label='contr -1')
+    plt.legend()
+    plt.show()
+
 def most_quiet_flare_time(name):
     """Returns the indices over which to average to get a good quiet pattern to calculate the contrast profile from.
 
@@ -88,15 +111,17 @@ def most_quiet_flare_time(name):
         return [4.5,6]
     else:
         raise NameError(f'WRONG NAME: the line {name} had no most quiet flare time defined.')
+
+def most_quiet_frames(name_of_line, time):
+    T = most_quiet_flare_time(name_of_line)
+    return np.where(time >= T[0], 1,0) * np.where( time <= T[1], 1, 0)
     
 def most_quiet_FD_spectr(FD_spec, name_of_line, time):
-    T = most_quiet_flare_time(name_of_line)
-    R = np.where(time >= T[0] | time <= T[1], 1, 0)
-    mq_FD = np.average(FD_spec, axis=0, weights=R)
-    return mq_FD
+    R = most_quiet_frames(name_of_line, time)
+    return np.average(FD_spec, axis=0, weights=R)
     
-def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, area_factor=60**2/np.pi/959.63**2, add_noise=False): 
-    wav, DFD, time, line, std = difference_FD_data(name_of_line, data, quiet_sun_subtraction, area_factor, add_noise)
+def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False): 
+    wav, DFD, time, line, std = difference_FD_data(name_of_line, data, quiet_sun_subtraction, num, area_factor, add_noise)
     saas = line
     
     FD = DFD + line
@@ -107,8 +132,8 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, area_facto
     
     return wav, contr_prof, time, line, (std/mq_FD if std is not None else None)
 
-def difference_FD_data(name_of_line, data, quiet_sun_subtraction=True, area_factor=60**2/np.pi/959.63**2, add_noise=False):            
-    wav, DFOV, time, line, std = difference_FOV_data(name_of_line, data, quiet_sun_subtraction)
+def difference_FD_data(name_of_line, data, quiet_sun_subtraction=True, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False):            
+    wav, DFOV, time, line, std = difference_FOV_data(name_of_line, data, quiet_sun_subtraction, num)
 
     # Correct normalization for area and mu-value (all intensities are normalized on the first wavelength)
     #   -correction for area is area_factor
@@ -312,13 +337,16 @@ def smooth2(data, n_wav=500, n_time=1, mode='same'):
 
 def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar=True, vlim=None, vlimscale=1, logscale=False, xlim=None):
     if vlim is None:   
-        vlim = np.max(np.abs(Z)) * vlimscale
+        vmin = np.percentile(Z, 2)
+        vmax = np.percentile(Z, 98)
+    else:
+        vmin, vmax = vlim
         
     if logscale:
             pcm = ax.pcolormesh(X, Y, Z, cmap='RdBu_r', norm=colors.SymLogNorm(linthresh=0.03, linscale=0.03,
-                                            vmin=-vlim, vmax=vlim, base=10), shading='auto')
+                                            vmin=vmin, vmax=vmax, base=10), shading='auto')
     else:
-        pcm = ax.pcolormesh(X, Y, Z, cmap='RdBu_r',vmin=-vlim, vmax=vlim, shading='auto', label=f'$\Delta I / \sigma$ []')
+        pcm = ax.pcolormesh(X, Y, Z, cmap='RdBu_r',vmin=vmin, vmax=vmax, shading='auto', label=f'$\Delta I / \sigma$ []')
 
     if seperate_colorbar:
         # print('X', X, 'Y', Y, 'Z', Z)
