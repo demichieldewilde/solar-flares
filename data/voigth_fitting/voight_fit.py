@@ -126,33 +126,44 @@ def contrast_fit_voight(wav, contrast, initial_guess, plot_rate=1000, neglect_po
     param_fit = []
     y_fits = []
     residuals = []
-
-    for i in range( np.shape(contrast)[0]):
-        if False: #i in exclude_frames:
+    n_frames = np.shape(contrast)[0]
+    
+    # parameter fitting
+    for i in range(n_frames):
+        if i in exclude_frames:
             k = initial_guess
             k[0] = 0
             popt = average_last_of_params(param_fit, num=5, initial_guess=k, fix_ind=fix_ind)
+            param_fit.append([popt, popt])
         else:
-            average_guess = average_last_of_params(param_fit, num=5, initial_guess=initial_guess, fix_ind=fix_ind)            
+            average_guess = average_last_of_params(param_fit, num=5, initial_guess=initial_guess, fix_ind=fix_ind)
             try:            
                 w = np.delete(wav, neglect_points, axis=0)
                 C = np.delete( contrast[i], neglect_points, axis=0)
                 F = fit_voigt(w, C, average_guess)
                 param_fit.append(F)
 
-                if i%plot_rate == plot_rate-1:
+                if i%plot_rate == 0:
                     print(f'{param_fit[-1] = }. Here comes the plot:')
                     plot_data_fit_voigt(wav, contrast[i], average_guess, popt=F[0], neglect_points=neglect_points)
 
             except RuntimeError:
-                if len(param_fit) == 0:
-                    print(f"At frame {i} the voight fitting was not succesfull and initial guess ({average_guess}) is used as params and as std of params. ")
+                if not param_fit:
+                    print(f"At frame {i} the voight fitting was not succesfull and average guess ({average_guess}) is used as params and as std of params. ")
                     param_fit.append((average_guess, average_guess))
                 else:
                     print(f"At frame {i} the voight fitting was not succesfull and previous params are used. ")
                     param_fit.append(param_fit[-1])              
-            popt = param_fit[-1][0]
+    
+    # parameter smoothing
+    param_fit = np.array(param_fit)
+    param_fit = np.stack((complete_rolling_average(param_fit[:,0,:]), complete_rolling_average(param_fit[:,1,:])), axis=1)
+    print('it is smoothent')
+
+    # residual calculation
+    for i in range( n_frames):
         y_data = contrast[i]
+        popt = param_fit[i][0]
         y_voigt = voigt(wav, popt[0], popt[1], popt[2], popt[3])
         y_fits.append(y_voigt)
         y_diff = y_data - y_voigt
@@ -161,7 +172,6 @@ def contrast_fit_voight(wav, contrast, initial_guess, plot_rate=1000, neglect_po
         return param_fit, np.array(y_fits) , np.array(residuals)
     except ValueError as error:
         _extracted_from_contrast_fit_voight_35(param_fit, y_fits, residuals, error)
-
 
 def _extracted_from_contrast_fit_voight_35(param_fit, y_fits, residuals, error):
     print('The lenght of those arrays does not work out')
@@ -172,7 +182,17 @@ def _extracted_from_contrast_fit_voight_35(param_fit, y_fits, residuals, error):
     t = [np.shape(k) for k in residuals]
     print("the shapes of the residuals:", set(t) , t)
     raise error
-        
+       
+def complete_rolling_average(param, k=30):
+    kernel = np.ones(k) / k
+    print(np.shape(param))
+    pre = np.array([param[0] for _ in range((k-1)//2) ])
+    aft = np.array([param[-1] for _ in range((k)//2)])
+    param = np.concatenate( (pre ,  param, aft))
+    param = np.array([np.convolve(param[:, i], kernel, mode='valid') for i in range(4) ]).T
+    print(np.shape(param))
+    return param
+ 
 def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_points=None, fix_ind=None):
     offset -= 1 
     if neglect_points is None:
