@@ -60,6 +60,7 @@ sr = solar_radius = 959.63
 area_factor = 60**2/np.pi/sr**2    
 
 def test_contrast(data, name_of_line):
+    print(f'Test of contrast profile and associated curves of {name_of_line}')
     wav, DFD, time, line, std = difference_FD_data(name_of_line, data, False)
     plt.plot(wav, DFD[0]  , label='DFD_0')
     plt.plot(wav, DFD[-1] , label='DFD_-1')
