@@ -1817,7 +1817,7 @@ def save_for_further_analysis(sst_data, theor_line):
     np.save(filename, np.array([sst_data._wavel-theta[0], sst_data.quiet_spect/theta[2], sst_data.std_quiet_sun/theta[2]]))
     
     # small comparison for area factor
-    print(f'The areafactor for THis flare is {theor_line.fov_areafactor} compared to 60**2/np.pi/959.63**2 = {60**2/np.pi/959.63**2}.\
+    print(f'The areafactor for THIS flare is {theor_line.fov_areafactor} compared to 60**2/np.pi/959.63**2 = {60**2/np.pi/959.63**2}.\
         \nHowever normaly this should be alike and since the gauge is bij the Quiet sun, the conversion should be oké.\
         \nPercentage: {round(100*theor_line.fov_areafactor/(60**2/np.pi/959.63**2), 2)}%.')
     a = [theor_line.fov_areafactor, *theta]

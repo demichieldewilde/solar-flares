@@ -310,8 +310,9 @@ class linestudier():
         if quality:
             print(mini)
             da.kwaliteit_fit(data, mini)
+   
 
-    def set_fov(self, X, Y, boundary, sr=959.63):
+    def set_fov(self, X, Y, boundary, sr=959.63, reduction=False):
         boundary = convert_boundary_to_nan(boundary[:-1, :-1])
         X /= sr
         Y /= sr
@@ -322,10 +323,12 @@ class linestudier():
         self.saas.update_clv(self.sst_mu,self.sst_wav,self.sst_clv,self.sst_wav,self.sst_dc)
         self.saas.update_vrot(0.,0.)
         self.saas_profile = self.saas.get_integration()
-        fov_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
         dx = (X[1:,1:] - X[0:-1,0:-1])
         dy = (Y[1:,1:] - Y[0:-1,0:-1])
         self.fov_areafactor = np.nansum(dx*dy+boundary) / np.pi
+        if reduction > 1 :
+            X, Y, boundary = reduce_(X, Y, boundary, reduction)
+        fov_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
         # areafactor = 1 / np.pi * (X[-1,-1]-X[0,0]) * (Y[-1,-1]-Y[0,0])
         self.spectr_fov = -self.saas.get_diff_spectra_fov(X,Y,fov_spectra) / self.fov_areafactor
         plt.plot(self.sst_wav, self.saas_profile, label="SAAS profile NESSI")
@@ -333,7 +336,7 @@ class linestudier():
         plt.legend()
         plt.show()
         
-    def set_quiet_sun(self, xlim, ylim, show=False, xyswitch=True, sr=959.63):
+    def set_quiet_sun(self, xlim, ylim, show=False, xyswitch=True, sr=959.63, reduction=False):
         if not hasattr(self, 'fov'):
             raise BufferError('self.fov is not yet defined. Please first run self.set_fov().')
         self.quiet_sun = [xlim, ylim]
@@ -344,14 +347,17 @@ class linestudier():
         X = self.fov[0][a:b, c:d]
         Y = self.fov[1][a:b, c:d]
         boundary = self.fov[2][a:b-1, c:d-1]
-        qs_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
         dx = (X[1:,1:] - X[0:-1,0:-1])
         dy = (Y[1:,1:] - Y[0:-1,0:-1])
         areafactor = np.nansum(dx*dy+boundary) /np.pi
         x0, y0 = np.nanmean(X), np.nanmean(Y)
         print(f"The quiet sun is pick at x {x0*sr, y0*sr} with average\
               mu {np.cos(np.arcsin((x0**2 +y0**2)**0.5))}")
+        if reduction > 1 :
+            X, Y, boundary = reduce_(X, Y, boundary, reduction)
+        qs_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
         self.spectr_qs = -self.saas.get_diff_spectra_fov(X,Y,qs_spectra) / areafactor
+        
         plt.plot(self.sst_wav, self.saas_profile, label="SAAS profile NESSI")
         plt.plot(self.sst_wav, self.spectr_qs, label="QS profile NESSI")
         plt.plot(self.sst_wav, self.spectr_fov, label="FOV profile NESSI")
@@ -375,6 +381,18 @@ class linestudier():
 def convert_boundary_to_nan(boundary):
     return np.where(boundary == 0, np.nan, 0)
      
+         
+def reduce_(X, Y, boundary, reduction=5):
+    n = reduction
+    X, Y, boundary = X[::n, ::n], Y[::n, ::n], boundary[::n,::n]
+    assert(X.shape == Y.shape)
+    if X.shape[0] == boundary.shape[0]:
+        boundary = boundary[:-1]
+    if X.shape[1] == boundary.shape[1]:
+        boundary = boundary[:,:-1]
+    print(X.shape, Y.shape, boundary.shape)
+    return X, Y, boundary
+    
         
 def fix_mu_theor(theor_line, mu):
     theor_line.exact_mu = mu
