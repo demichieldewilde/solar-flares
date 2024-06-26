@@ -1,7 +1,7 @@
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import sys
-sys.path.append('D:/solar flares/data/2017-09-06')
+sys.path.append('E:/solar flares/data/2017-09-06')
 import use_nessi3 as un
 import data_analysis as da
 import numpy as np
@@ -153,7 +153,7 @@ def contrast_fit_voigt(wav, contrast, initial_guess, plot_rate=1000, neglect_poi
                     plot_data_fit_voigt(wav, contrast[i], average_guess, popt=F[0], neglect_points=neglect_points)
 
             except RuntimeError:
-                if not param_fit:
+                if len(param_fit) != 0:
                     print(f"At frame {i} the voigt fitting was not succesfull and average guess ({average_guess}) is used as params and as std of params. ")
                     param_fit.append((average_guess, average_guess))
                 else:
