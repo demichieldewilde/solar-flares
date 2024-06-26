@@ -145,7 +145,7 @@ def difference_FD_data(name_of_line, data, quiet_sun_subtraction=True, num=100,a
         noise = np.random.normal(loc=0, scale=std[0], size=(DFD.shape))
         DFD += noise
 
-    return wav, DFD, time, line, (std if add_noise else None)
+    return wav, DFD, time, line, std 
 
 '''
 The scale_pix_to_saas is the number by which the standard deviation has to be multiplied to get to the the std of the saas observation
@@ -191,8 +191,8 @@ def get_harps_std(name, backup=1):
     stdr = np.std(wingr)
     return np.mean([stdl, stdr])
 
-def noise_alike_harps(name, shape, backup=1, x_steps=1):
-    std = get_harps_std(name, backup)
+def noise_alike_harps(name, shape, backup=1, x_steps=1, scale_noise=1):
+    std = get_harps_std(name, backup) * scale_noise
     return np.array(
         [
             generate_random_array(shape[1], block_size=x_steps, std=std)
@@ -237,8 +237,9 @@ def time_hark(time, arr2D, cad):
         t += cad
     return np.array(t2), np.array(a2D2)       
     
-def degenerate_contrast_as_Harps(name_of_line, data, quiet_sun_subtraction=True, area_factor=60**2/np.pi/959.63**2,normal=True, add_noise=False):
-    wav, DFOV, time, line, std = contrast_FOV_data(name_of_line, data, quiet_sun_subtraction, normal=normal)
+def degenerate_contrast_as_Harps(name_of_line, data, quiet_sun_subtraction=True, area_factor=60**2/np.pi/959.63**2,
+                                 normal=True, add_noise=False, scale_noise=1):
+    wav, DFOV, time, line, std = contrast_FD_data(name_of_line, data, quiet_sun_subtraction)
     wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
 
     line = interp1d(wav_nessi, dc_nessi)(wav)
@@ -247,7 +248,7 @@ def degenerate_contrast_as_Harps(name_of_line, data, quiet_sun_subtraction=True,
     time, DFD = time_hark(time, DFD, cad=5)
     
     if add_noise:
-        noise = noise_alike_harps(name_of_line, DFD.shape, backup=std[0])
+        noise = noise_alike_harps(name_of_line, DFD.shape, backup=std[0], scale_noise=scale_noise)
         DFD += noise
 
     return wav, smooth(DFD), time, line, (std if add_noise else None)
@@ -255,7 +256,7 @@ def degenerate_contrast_as_Harps(name_of_line, data, quiet_sun_subtraction=True,
 def get_Harps(name_of_line):
     # Harps starts at 8:57 and and at 14:33 UT
     # first flare starts exactly at 8:57 (X2.2) the second at 11:53 (X9.3)
-    folder = "D:/solar flares/data/2017-09-06\Harps/"
+    folder = "E:/solar flares/data/2017-09-06\Harps/"
     flare = np.load(f'{folder}Flux_corrected.npy')
 
     wav = np.load(f'{folder}Wavelength.npy')
