@@ -239,19 +239,19 @@ def time_hark(time, arr2D, cad):
     
 def degenerate_contrast_as_Harps(name_of_line, data, quiet_sun_subtraction=True, area_factor=60**2/np.pi/959.63**2,
                                  normal=True, add_noise=False, scale_noise=1):
-    wav, DFOV, time, line, std = contrast_FD_data(name_of_line, data, quiet_sun_subtraction)
-    wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
+    wav, contr, time, line, std = contrast_FD_data(name_of_line, data, quiet_sun_subtraction)
+    # wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
 
-    line = interp1d(wav_nessi, dc_nessi)(wav)
-    DFD = area_factor * DFOV 
+    # line = interp1d(wav_nessi, dc_nessi)(wav)
+    # DFD = area_factor * DFOV 
     
-    time, DFD = time_hark(time, DFD, cad=5)
+    time, contr = time_hark(time, contr, cad=5)
     
     if add_noise:
-        noise = noise_alike_harps(name_of_line, DFD.shape, backup=std[0], scale_noise=scale_noise)
-        DFD += noise
+        noise = noise_alike_harps(name_of_line, contr.shape, backup=std[0], scale_noise=scale_noise)
+        contr += noise
 
-    return wav, smooth(DFD), time, line, (std if add_noise else None)
+    return wav, smooth(contr), time, line, (std if add_noise else None)
     
 def get_Harps(name_of_line):
     # Harps starts at 8:57 and and at 14:33 UT
