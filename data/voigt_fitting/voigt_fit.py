@@ -124,8 +124,25 @@ def average_last_of_params(params, num=5, initial_guess=None, fix_ind=[]):
         guess[ind] = initial_guess[ind]
     return guess
 
+def retreive_initial_guess(initial_guess, frame, many_guesses=True):
+    """retreives the initial guess from the correct format
+    when a list of four is given this is the initial guess for alle frames
+    otherwise the format is 
+    [[framenumber start, associated initial guess],
+    [framenumber start, associated initial guess],
+    ...
+    """
+    if np.shape(initial_guess) == (4,):
+        many_guesses = False
+    if not many_guesses:
+         return initial_guess
+    for i, j in enumerate(initial_guess):
+        if frame < j[0]:
+            return initial_guess[i-1][1]
 
-def contrast_fit_voigt(wav, contrast, initial_guess, plot_rate=1000, neglect_points=[], fix_ind=[], exclude_frames=[], hard_fix=False):
+
+def contrast_fit_voigt(wav, contrast, initial_guess, plot_rate=1000, neglect_points=[], 
+                       fix_ind=[], exclude_frames=[], hard_fix=False):
 
     param_fit = []
     y_fits = []
@@ -134,13 +151,15 @@ def contrast_fit_voigt(wav, contrast, initial_guess, plot_rate=1000, neglect_poi
     
     # parameter fitting
     for i in range(n_frames):
+        i_g = retreive_initial_guess(initial_guess, i)
+
         if i in exclude_frames:
-            k = initial_guess
+            k = i_g
             k[0] = 0
             popt = average_last_of_params(param_fit, num=5, initial_guess=k, fix_ind=fix_ind)
             param_fit.append([popt, popt])
         else:
-            average_guess = average_last_of_params(param_fit, num=5, initial_guess=initial_guess, fix_ind=fix_ind)
+            average_guess = average_last_of_params(param_fit, num=5, initial_guess=i_g, fix_ind=fix_ind)
             try:            
                 w = np.delete(wav, neglect_points, axis=0)
                 C = np.delete( contrast[i], neglect_points, axis=0)
@@ -196,7 +215,8 @@ def complete_rolling_average(param, k=30):
     param = np.array([np.convolve(param[:, i], kernel, mode='valid') for i in range(4) ]).T
     return param
  
-def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_points=None, fix_ind=None, hard_fix=False, exclude_frames=None):
+def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_points=None, 
+                  fix_ind=None, hard_fix=False, exclude_frames=None):
     offset -= 1 
     if neglect_points is None:
         neglect_points = []
