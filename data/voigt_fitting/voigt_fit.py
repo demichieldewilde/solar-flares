@@ -130,19 +130,24 @@ def retreive_initial_guess(initial_guess, frame, many_guesses=True):
     otherwise the format is 
     [[framenumber start, associated initial guess],
     [framenumber start, associated initial guess],
-    ...
+    ...]
     """
-    if np.shape(initial_guess) == (4,):
-        many_guesses = False
+    try:
+        if np.shape(initial_guess) == (4,):
+            # print("standard initial guess format")
+            many_guesses = False
+    except ValueError:
+        many_guesses = True
     if not many_guesses:
          return initial_guess
     for i, j in enumerate(initial_guess):
         if frame < j[0]:
             return initial_guess[i-1][1]
+    return initial_guess[-1][1]
 
 
-def contrast_fit_voigt(wav, contrast, initial_guess, plot_rate=1000, neglect_points=[], 
-                       fix_ind=[], exclude_frames=[], hard_fix=False):
+def contrast_fit_voigt(wav, contrast, initial_guess, time, plot_rate=1000, neglect_points=[], 
+                       fix_ind=[], quiet_frames=[], exclude_frames=[], hard_fix=False):
 
     param_fit = []
     y_fits = []
@@ -152,12 +157,16 @@ def contrast_fit_voigt(wav, contrast, initial_guess, plot_rate=1000, neglect_poi
     # parameter fitting
     for i in range(n_frames):
         i_g = retreive_initial_guess(initial_guess, i)
-
-        if i in exclude_frames:
+        # print(f"frame {i} with initial guess : {i_g}")
+        if i in quiet_frames:
             k = i_g
             k[0] = 0
             popt = average_last_of_params(param_fit, num=5, initial_guess=k, fix_ind=fix_ind)
             param_fit.append([popt, popt])
+
+        elif i in exclude_frames:
+            nanpopt = np.array([np.nan for _ in range(4)])
+            param_fit.append([nanpopt, nanpopt])
         else:
             average_guess = average_last_of_params(param_fit, num=5, initial_guess=i_g, fix_ind=fix_ind)
             try:            
@@ -168,19 +177,20 @@ def contrast_fit_voigt(wav, contrast, initial_guess, plot_rate=1000, neglect_poi
                 param_fit.append(F)
 
                 if i%plot_rate == 0:
-                    print(f'frame {i} with {param_fit[-1] = }. Here comes the plot:')
+                    print(f'frame {i} at time {time[i]} with {param_fit[-1] = }. Here comes the plot:')
                     plot_data_fit_voigt(wav, contrast[i], average_guess, popt=F[0], neglect_points=neglect_points)
 
             except RuntimeError:
-                if len(param_fit) != 0:
-                    print(f"At frame {i} the voigt fitting was not succesfull and average guess ({average_guess}) is used as params and as std of params. ")
-                    param_fit.append((average_guess, average_guess))
-                else:
-                    print(f"At frame {i} the voigt fitting was not succesfull and previous params are used. ")
-                    param_fit.append(param_fit[-1])              
+                print(f"At frame {i} at time {time[i]} the voigt fitting was not succesfull and average guess ({average_guess}) is used as params and as std of params. ")
+                param_fit.append(((average_guess, average_guess) if i==0 else param_fit[-1]))
+
+    # excluded frames interpolation
+    param_fit = np.array(param_fit)
+    if len(exclude_frames) > 0:
+        print(exclude_frames, len(exclude_frames), param_fit)
+        param_fit = param_fit_nan_interpolate(param_fit)
     
     # parameter smoothing
-    param_fit = np.array(param_fit)
     param_fit = np.stack((complete_rolling_average(param_fit[:,0,:]), complete_rolling_average(param_fit[:,1,:])), axis=1)
     # print('it is smoothent')
 
@@ -214,9 +224,27 @@ def complete_rolling_average(param, k=30):
     param = np.concatenate( (pre ,  param, aft))
     param = np.array([np.convolve(param[:, i], kernel, mode='valid') for i in range(4) ]).T
     return param
- 
+
+def param_fit_nan_interpolate(param_fit):
+    params = param_fit[:,0,:]
+    for i in range(4):
+        one_param = params[:,i]
+        params[:,i] = nan_interpolate(one_param)
+    covar = param_fit[:,1,:]
+    for i in range(4):
+        one_cov = covar[:,i]
+        covar[:,i] = nan_interpolate(one_cov)
+    return np.stack((params, covar), axis=1)
+    
+def nan_interpolate(one_param):
+    from scipy.interpolate import interp1d
+
+    interp_func = interp1d(np.arange(len(one_param))[~np.isnan(one_param)], one_param[~np.isnan(one_param)], 
+                        kind='linear', fill_value='extrapolate')
+    return interp_func(np.arange(len(one_param)))
+
 def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_points=None, 
-                  fix_ind=None, hard_fix=False, exclude_frames=None):
+                  fix_ind=None, hard_fix=False, exclude_frames=[]):
     offset -= 1 
     if neglect_points is None:
         neglect_points = []
@@ -225,15 +253,14 @@ def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_poi
     wav, contr , time, line, std = un2.contrast_FD_data(name, data, quiet_sun_subtraction=False, num=40)
     print(f'The average is {np.average(contr)}')
     
-    if exclude_frames is None:
-        exclude_frames = np.where(un2.most_quiet_frames(name, time))[0] 
+    quiet_frames = np.where(un2.most_quiet_frames(name, time))[0] 
     # print(exclude_frames)
     # print(np.shape(wav), np.shape(DFOV), np.shape(time), np.shape(line))
     # Initial guess: [amp_v, cen_v, sigma_v, gamma_v, amp_g, cen_g, sigma_g]
     # print(np.shape(wav), np.shape(np.delete(wav, neglect_points, axis=0)), wav, np.delete(wav, neglect_points, axis=0))
     # print(np.shape(DFOV+offset), np.shape(np.delete(DFOV+offset, neglect_points, axis=1)), DFOV+offset, np.delete(DFOV+offset, neglect_points, axis=1))
-    params, voigt, res = contrast_fit_voigt(wav, contr+offset, initial_guess, plot_rate, 
-                                              neglect_points, fix_ind, exclude_frames=exclude_frames, hard_fix=hard_fix)
+    params, voigt, res = contrast_fit_voigt(wav, contr+offset, initial_guess, time, plot_rate, 
+                                              neglect_points, fix_ind, quiet_frames=quiet_frames, hard_fix=hard_fix)
     visualize_analysis(res, voigt, wav, time, name)
     save_voigt_fits(name, params, res)
         
@@ -274,7 +301,10 @@ def cut_off_data(data, up_lim=None, down_lim=None):
     cutoff_data = np.where(data < down_lim, down_lim, cutoff_data)
     return cutoff_data
 
-def visualize_analysis(res, voigt, wav, time, name, non_centered=True):
+def visualize_analysis(res, voigt, wav, time, name, non_centered=True, with_frame_numbers=False):
+    # TODO: delete this line
+    if True:
+        time = np.arange(len(time))
     fig, ax = plt.subplots()
 
     vmax = np.percentile(res, 97)
@@ -294,6 +324,12 @@ def visualize_analysis(res, voigt, wav, time, name, non_centered=True):
     ax.clabel(CS, inline=True, fontsize=10) 
     ax.set_xlabel(r"Wavelength [$\AA$]")
     ax.set_ylabel('time from start of flare [min]')
+    if with_frame_numbers:
+        sec = ax.secondary_yaxis(location=wav[-1])
+        number_of_frame_ticks = 5
+        step = len(time) // number_of_frame_ticks
+        sec.set_yticks(time[::step], labels=np.arange(len(time))[::step])
+
     ax.set_title(f"voigt fit and Residue analysis for {name} flare")
     cb.set_label(r'the residues after Voigt fit [relative intensity]')
     plt.show()   
