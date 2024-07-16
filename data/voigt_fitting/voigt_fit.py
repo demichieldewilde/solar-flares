@@ -122,7 +122,6 @@ def average_last_of_params(params, num=5, initial_guess=None, fix_ind=[]):
     guess= np.nanmean(np.array(k), axis=0)
     for ind in fix_ind:
         guess[ind] = initial_guess[ind]
-    print(initial_guess, guess)
     return guess
 
 def retreive_initial_guess(initial_guess, frame, many_guesses=True):
