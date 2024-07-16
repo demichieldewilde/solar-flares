@@ -119,9 +119,10 @@ def average_last_of_params(params, num=5, initial_guess=None, fix_ind=[]):
         k = [p[0] for p in params[-num : ]]
     if initial_guess is not None:
         k.append(initial_guess)
-    guess= np.average(np.array(k), axis=0)
+    guess= np.nanmean(np.array(k), axis=0)
     for ind in fix_ind:
         guess[ind] = initial_guess[ind]
+    print(initial_guess, guess)
     return guess
 
 def retreive_initial_guess(initial_guess, frame, many_guesses=True):
@@ -260,7 +261,7 @@ def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_poi
     # print(np.shape(wav), np.shape(np.delete(wav, neglect_points, axis=0)), wav, np.delete(wav, neglect_points, axis=0))
     # print(np.shape(DFOV+offset), np.shape(np.delete(DFOV+offset, neglect_points, axis=1)), DFOV+offset, np.delete(DFOV+offset, neglect_points, axis=1))
     params, voigt, res = contrast_fit_voigt(wav, contr+offset, initial_guess, time, plot_rate, 
-                                              neglect_points, fix_ind, quiet_frames=quiet_frames, hard_fix=hard_fix)
+                                              neglect_points, fix_ind, quiet_frames=quiet_frames, exclude_frames=exclude_frames, hard_fix=hard_fix)
     visualize_analysis(res, voigt, wav, time, name)
     save_voigt_fits(name, params, res)
         
