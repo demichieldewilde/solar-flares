@@ -131,7 +131,7 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,ar
     
     contr_prof = FD / mq_FD
     
-    return wav, contr_prof, time, line, (std/mq_FD if std is not None else None)
+    return wav, contr_prof, time, line, (std/mq_FD**0.5 if std is not None else None)
 
 def difference_FD_data(name_of_line, data, quiet_sun_subtraction=True, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False):            
     wav, DFOV, time, line, std = difference_FOV_data(name_of_line, data, quiet_sun_subtraction, num)
