@@ -133,7 +133,7 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,ar
     
     return wav, contr_prof, time, line, (std/mq_FD**0.5 if std is not None else None)
 
-def difference_FD_data(name_of_line, data, quiet_sun_subtraction=True, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False):            
+def difference_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False):            
     wav, DFOV, time, line, std = difference_FOV_data(name_of_line, data, quiet_sun_subtraction, num)
 
     # Correct normalization for area and mu-value (all intensities are normalized on the first wavelength)
@@ -145,14 +145,14 @@ def difference_FD_data(name_of_line, data, quiet_sun_subtraction=True, num=100,a
         noise = np.random.normal(loc=0, scale=std[0], size=(DFD.shape))
         DFD += noise
 
-    return wav, DFD, time, line, std 
+    return wav, DFD, time, line, std * area_factor**0.5
 
 '''
 The scale_pix_to_saas is the number by which the standard deviation has to be multiplied to get to the the std of the saas observation
 it should be the inverse of square root of (number of pixels in sst (1920×1200 CHROMIS or 1k × 1k CRISP) * areafactor (60**2/np.pi/sr**2) ) 
 hence 1/53.544360373477076
 '''
-def difference_FOV_data(name_of_line, data, quiet_sun_subtraction=True, num=100, scale_pix_to_saas=1/53.4):
+def difference_FOV_data(name_of_line, data, quiet_sun_subtraction=False, num=100, scale_pix_to_saas=1/53.4):
     FOV = data[f"FOV_{name_of_line}"]
     wav_qs, qs_spec, std_qs = data[f"quiet_sun_{name_of_line}"]
     time = data[f"TIME_{name_no2(name_of_line)}"]

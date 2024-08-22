@@ -1721,10 +1721,11 @@ def ax_peak_enhancement(ax, A, Deltas, criterion):
     ax.set_title(f' (STD by the {criterion} criterion) ')
     ax.set_xlabel(r"Width of the interval $\Delta W$ $[\AA]$")
     
-def get_file_path_opt_w_data(filename):
+def get_file_path_opt_w_data(filename, name_line):
+    full_path = get_full_path(name_line)
     if filename[-4:] != ".npy":
         filename = f"{filename}.npy"
-    return os.path.join('line_data', 'optimal_width',filename)
+    return os.path.join(full_path, 'line_data', 'optimal_width',filename)
 
 def hulp_save_opt_w_data(name, array):
     filename = get_file_path_opt_w_data(name)
