@@ -1926,7 +1926,7 @@ def get_full_path(name):
 def derive_intensity_lim(sst_data, mins = [], maxs = []):
     n = sst_data._number_of_frames   
     
-    for frame in range(0, n, n//10):
+    for frame in range(0, n, max(n//10, 1)):
         sst_data.frame_integrated_spect(frame)
         mins.append(np.min(sst_data.av_spect))
         maxs.append(np.max(sst_data.av_spect))
@@ -1956,7 +1956,7 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1):
                                     , kind='linear', fill_value="extrapolate")
 
 
-    wav = merge_wavelengths(sst_data._wavel+ theta[0], theor_line.sst_wav)
+    wav = merge_wavelengths(sst_data._wavel - theta[0], theor_line.sst_wav)
     if "CaK" in name_of_line:
         wav = wav[:-1]
 
@@ -2013,7 +2013,7 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1):
 
         x = sst_data._wavel
         y = sst_data.frame_integrated_spect(frame)
-        f_sst2 = interp1d(sst_data._wavel, y, kind='linear', fill_value="extrapolate")
+        f_sst2 = interp1d(sst_data._wavel-theta[0], y, kind='linear', fill_value="extrapolate")
         line_sst.set_data(x, y)
 
         print(frame, end=" ")
@@ -2040,9 +2040,7 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1):
     # http://matplotlib.sourceforge.net/api/animation_api.html
     anim.save(filename, fps=fps, extra_args=['-vcodec', 'libx264'])
 
-    # save the animation as an mp4.  This requires ffmpeg or mencoder to be
-    # installed.  The extra_args ensure that the x264 codec is used, so that
-    # the video can be embedded in html5.  You may need to adjust this for
-    # your system: for more information, see
-    # http://matplotlib.sourceforge.net/api/animation_api.html
-    anim.save(filename, fps=fps, extra_args=['-vcodec', 'libx264'])
+
+    
+    print("We are exiting this kernel")
+    
