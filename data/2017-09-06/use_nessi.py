@@ -1679,6 +1679,7 @@ def get_TIME(sst_data):
     sst_data.TIME = TIME
     return TIME
 
+
 def optimal_ax(ax, A, STD, TIME, Deltas, criterion, timelim=30):
     MAX = np.nanmax(A)
 
@@ -1920,3 +1921,128 @@ def get_full_path(name):
         return "E:\solar flares\data\\2014-06-10"
     else:
         raise FileNotFoundError(f'For the profided name {name} no full path was defined.')
+
+
+def derive_intensity_lim(sst_data, mins = [], maxs = []):
+    n = sst_data._number_of_frames   
+    
+    for frame in range(0, n, n//10):
+        sst_data.frame_integrated_spect(frame)
+        mins.append(np.min(sst_data.av_spect))
+        maxs.append(np.max(sst_data.av_spect))
+        
+    return np.min(np.array(mins)), np.max(np.array(maxs))
+
+def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1):
+    filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_animation.mp4'
+    import matplotlib.animation as animation
+
+    if os.path.isfile(filename):
+        print(f"The filename {filename} already exist")
+        return
+
+    #params
+    frame = 0
+    fps = 6
+    nSeconds = 5
+    theta = sst_data.theta_nessi_to_quiet_sun
+    theta[1] = theta[2]
+
+    f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[1] * theor_line.spectr_qs 
+                                    , kind='linear', fill_value="extrapolate")
+    f_nessi_fov = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[1] * theor_line.spectr_fov 
+                                    , kind='linear', fill_value="extrapolate")
+    f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[1] * theor_line.saas_profile 
+                                    , kind='linear', fill_value="extrapolate")
+
+
+    wav = merge_wavelengths(sst_data._wavel+ theta[0], theor_line.sst_wav)
+    if "CaK" in name_of_line:
+        wav = wav[:-1]
+
+
+
+    limit = derive_intensity_lim(sst_data, 
+                                    mins=[np.min(f_nessi_saas(theta)(wav)), np.min(f_nessi_fov(theta)(wav))],
+                                    maxs=[np.max(f_nessi_saas(theta)(wav)), np.max(f_nessi_fov(theta)(wav))])
+
+    def frame_visualization(sst_data, frame, theta):
+        fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(20, 8), gridspec_kw={"width_ratios":[1,1]})
+
+        sst_data.ccp_frame(frame,Show=False)
+        a=sst_data.current_ccp
+
+        ax[0].set_title(f"spectral line {name_of_line} of {name_of_flare} flare")
+        sst_data.frame_integrated_spect(frame)
+        if 'CaK' in name_of_line:
+            line_sst, = ax[0].plot(sst_data._wavel[:-1], sst_data.av_spect[:-1], '--', label='sst data') 
+        else:
+            line_sst, = ax[0].plot(sst_data._wavel, sst_data.av_spect, '--', label='sst data')
+        ax[0].plot(wav , f_nessi_fov(theta)(wav), label='nessi FOV')
+        ax[0].plot(wav, f_nessi_saas(theta)(wav), label='nessi full disk')
+        ax[0].legend()
+
+        ax[0].set_ylim(limit)
+
+        im = ax[1].imshow(Image.fromarray(sst_data.current_ccp[::-1,:]))
+        ax[1].set_title("COCOplot")
+        text = ax[1].text(
+            -300,
+            -20,
+            f"frame: {frame}, {time_hulp(sst_data.TIME[frame])}",
+            fontsize=12,
+            color='red',
+        )
+        print(
+            f"frame: {frame}, {sst_data._time[frame]}, total number of frames: {sst_data._number_of_frames} "
+        )
+
+        plt.show()
+
+        return fig, line_sst,  im, text
+
+
+
+
+    fig, line_sst, im, text, = frame_visualization(sst_data, frame, sst_data.theta_nessi_to_quiet_sun)
+
+    # animation function.  This is called sequentially
+    def animate(i):
+        # step of number of frames. How to step through the frames, at which rate.
+        frame = step * i
+
+        x = sst_data._wavel
+        y = sst_data.frame_integrated_spect(frame)
+        f_sst2 = interp1d(sst_data._wavel, y, kind='linear', fill_value="extrapolate")
+        line_sst.set_data(x, y)
+
+        print(frame, end=" ")
+
+
+        text.set_text(f"frame: {str(frame)}, {str(sst_data._time[frame])[2:10]}")
+        # text = ax[1].text(
+        #     -300, -20, f"frame: {str(frame)}, {str(sst_data._time[frame])[2:10]}", fontsize=12, color='red'
+        # )    
+        sst_data.ccp_frame(frame,Show=False)
+        a = sst_data.current_ccp
+        im.set_array(Image.fromarray(a[::-1,:]))
+        return line_sst, [im], text
+
+
+    # call the animator.  blit=True means only re-draw the parts that have changed.
+    anim = animation.FuncAnimation(fig, animate,
+                                frames=(sst_data._number_of_frames-1) // step, interval=500) 
+
+    # save the animation as an mp4.  This requires ffmpeg or mencoder to be
+    # installed.  The extra_args ensure that the x264 codec is used, so that
+    # the video can be embedded in html5.  You may need to adjust this for
+    # your system: for more information, see
+    # http://matplotlib.sourceforge.net/api/animation_api.html
+    anim.save(filename, fps=fps, extra_args=['-vcodec', 'libx264'])
+
+    # save the animation as an mp4.  This requires ffmpeg or mencoder to be
+    # installed.  The extra_args ensure that the x264 codec is used, so that
+    # the video can be embedded in html5.  You may need to adjust this for
+    # your system: for more information, see
+    # http://matplotlib.sourceforge.net/api/animation_api.html
+    anim.save(filename, fps=fps, extra_args=['-vcodec', 'libx264'])

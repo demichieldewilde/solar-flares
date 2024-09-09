@@ -1986,4 +1986,4 @@ def analyse_optimal_interval(sst_data, Deltas=np.arange(0, 3, 0.03), area_factor
 
 
 from use_nessi import get_full_path, correct_flare_start, load_for_further_analysis, save_for_further_analysis
-from use_nessi import add_enters
+from use_nessi import add_enters, Movie_making
