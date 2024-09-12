@@ -1975,9 +1975,9 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1):
         ax[0].set_title(f"spectral line {name_of_line} of {name_of_flare} flare")
         sst_data.frame_integrated_spect(frame)
         if 'CaK' in name_of_line:
-            line_sst, = ax[0].plot(sst_data._wavel[:-1], sst_data.av_spect[:-1], '--', label='sst data') 
+            line_sst, = ax[0].plot(sst_data._wavel[:-1]-theta[0], sst_data.av_spect[:-1], '--', label='sst data') 
         else:
-            line_sst, = ax[0].plot(sst_data._wavel, sst_data.av_spect, '--', label='sst data')
+            line_sst, = ax[0].plot(sst_data._wavel-theta[0], sst_data.av_spect, '--', label='sst data')
         ax[0].plot(wav , f_nessi_fov(theta)(wav), label='nessi FOV')
         ax[0].plot(wav, f_nessi_saas(theta)(wav), label='nessi full disk')
         ax[0].legend()
