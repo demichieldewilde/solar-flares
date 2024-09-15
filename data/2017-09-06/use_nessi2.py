@@ -177,6 +177,8 @@ def difference_FOV_data(name_of_line, data, quiet_sun_subtraction=False, num=100
     return wav, DFOV , time, line, std
 
 def smooth_wavelengths(wav1, wav2, num=100):
+    if num <= 0:
+        num = len(wav1)
     start = max(np.min(wav1), np.min(wav2))
     stop  = min(np.max(wav1), np.max(wav2))
     return np.linspace(start, stop, num)

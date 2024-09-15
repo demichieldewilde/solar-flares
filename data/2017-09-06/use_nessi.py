@@ -1948,11 +1948,11 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1):
     theta = sst_data.theta_nessi_to_quiet_sun
     theta[1] = theta[2]
 
-    f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[1] * theor_line.spectr_qs 
+    f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav , theta[1] * theor_line.spectr_qs 
                                     , kind='linear', fill_value="extrapolate")
-    f_nessi_fov = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[1] * theor_line.spectr_fov 
+    f_nessi_fov = lambda theta: interp1d(theor_line.sst_wav , theta[1] * theor_line.spectr_fov 
                                     , kind='linear', fill_value="extrapolate")
-    f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav + theta[0], theta[1] * theor_line.saas_profile 
+    f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav , theta[1] * theor_line.saas_profile 
                                     , kind='linear', fill_value="extrapolate")
 
 
@@ -2011,15 +2011,15 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1):
         # step of number of frames. How to step through the frames, at which rate.
         frame = step * i
 
-        x = sst_data._wavel
+        x = sst_data._wavel-theta[0]
         y = sst_data.frame_integrated_spect(frame)
-        f_sst2 = interp1d(sst_data._wavel-theta[0], y, kind='linear', fill_value="extrapolate")
+        # f_sst2 = interp1d(sst_data._wavel-theta[0], y, kind='linear', fill_value="extrapolate")
         line_sst.set_data(x, y)
 
         print(frame, end=" ")
 
 
-        text.set_text(f"frame: {str(frame)}, {str(sst_data._time[frame])[2:10]}")
+        text.set_text(f"frame: {str(frame)}, {str(sst_data._time[frame])[:8]}")
         # text = ax[1].text(
         #     -300, -20, f"frame: {str(frame)}, {str(sst_data._time[frame])[2:10]}", fontsize=12, color='red'
         # )    
