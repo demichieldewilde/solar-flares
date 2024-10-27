@@ -1933,7 +1933,7 @@ def derive_intensity_lim(sst_data, mins = [], maxs = []):
         
     return np.min(np.array(mins)), np.max(np.array(maxs))
 
-def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1):
+def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show_boundary=False):
     filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_animation.mp4'
     import matplotlib.animation as animation
 
@@ -1985,6 +1985,8 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1):
         ax[0].set_ylim(limit)
 
         im = ax[1].imshow(Image.fromarray(sst_data.current_ccp[::-1,:]))
+        if show_boundary:
+            ax[1].imshow(Image.fromarray(sst_data.boundary[::-1,:]), alpha=0.3)
         ax[1].set_title("COCOplot")
         text = ax[1].text(
             -300,
