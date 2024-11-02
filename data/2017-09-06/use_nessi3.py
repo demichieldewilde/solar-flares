@@ -864,7 +864,7 @@ class SST_data_from_multiple_fits_files():
             self._boundary_per_frame = False
 
         else:
-            raise ValueError(f'The provided boundary methode {methode} is not implemented!')
+            raise ValueError(f'The provided boundary methode {methode} is not implemented! only "No Boundary", "By_user" and "search"')
 
         self.check_scalar_not_nan()
 
@@ -961,7 +961,8 @@ class SST_data_from_multiple_fits_files():
         # print(f"calculation of the boundary and zero for frame {frame}")
         try:
             if np.any(np.isnan(self.zeros)):
-                return np.where(np.isnan(self.datacube(frame)[0,:,:]), 0, 1)
+                self.boundary = np.where(np.isnan(self.datacube(frame)[0,:,:]), 0, 1)
+                return self.boundary
         except TypeError as e:
             print(f'{self.zeros = }')
             raise e
