@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 import copy
 import sunpy
 import cocopy as cp
-from ISPy.io import solarnet # very use full to get time and to get spectral and coordinate positions
+import solarnet # very use full to get time and to get spectral and coordinate positions
 import sunpy.map
 import astropy.units as u
 from scipy.io import readsav as rs
