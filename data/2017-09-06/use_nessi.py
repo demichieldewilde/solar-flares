@@ -2040,7 +2040,7 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
     # the video can be embedded in html5.  You may need to adjust this for
     # your system: for more information, see
     # http://matplotlib.sourceforge.net/api/animation_api.html
-    anim.save(filename, fps=fps, extra_args=['-vcodec', 'libx264'])
+    anim.save(filename, fps=fps) # , extra_args=['-vcodec', 'libx264']
 
 
     
