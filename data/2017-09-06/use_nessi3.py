@@ -511,7 +511,7 @@ def fit_qs_to_NESSI_cont_point(theor_line, sst_data,  frame=0, xshift=None):
     color_wanted_patch = sst_data.quiet_sun['color']
     ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color_wanted_patch)
     ax[1].set_title(f"COCOplot of frame {str(frame)}")
-    ax[0].set_xlim(3932, 3936)
+    ax[0].set_xlim((np.min(sst_data._wavel), np.max(sst_data._wavel[:-1])))
     ax[0].set_ylim(0,10)
     plt.show()
 

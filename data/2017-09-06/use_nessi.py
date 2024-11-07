@@ -1230,7 +1230,10 @@ def get_coord_creator(filename):
 def merge_wavelengths(wav1, wav2):
     wav1 = list(wav1)
     wav2 = list(wav2)
-    return np.array(merge_sort_and_clip_lists(wav1, wav2))
+    mwav = np.array(merge_sort_and_clip_lists(wav1, wav2))
+    if len(mwav) == 0:
+        raise NotOverlappingError(f"The wavelengts {wav1} and {wav2} are not overlapping yielding empty merging. ")
+    return mwav
 
 def merge_sort_and_clip_lists(list1, list2):
     # Merge the two lists
@@ -1319,6 +1322,9 @@ def restrict_intervalx2(interval, x):
 
 
 class WrongLineError(Exception):
+    pass
+
+class NotOverlappingError(Exception):
     pass
 
 ####################################################################################
