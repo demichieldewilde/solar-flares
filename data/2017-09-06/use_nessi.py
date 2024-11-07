@@ -2051,6 +2051,227 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
     anim.save(filename, fps=fps) # , extra_args=['-vcodec', 'libx264']
 
 
+def get_frame_offset_from_time_offset(sst_data, frame_offset=5, time_offset=None):
+    if time_offset is not None:
+        if time_offset > 0:
+            T = sst_data.TIME
+            T -= T[0]
+            frame_offset = 1
+            k = len(T)
+            for i in range(0,k,-1):
+                if T[i] >= time_offset:
+                    frame_offset = i
+    return frame_offset
+
+
+def Difference_Movie(theor_line, sst_data, name_of_flare, name_of_line, step=1, show_boundary=False, frame_offset=5, time_offset=None):
+    import os
+    import numpy as np
+    from PIL import Image
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import interp1d
+    import matplotlib.animation as animation
     
-    print("We are exiting this kernel")
+    frame_offset = get_frame_offset_from_time_offset(sst_data, frame_offset, time_offset)
     
+    filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_diff_animation.mp4'
+
+    if os.path.isfile(filename):
+        print(f"The filename {filename} already exists")
+        return
+
+    # params
+    frame = 0
+    fps = 6
+    theta = sst_data.theta_nessi_to_quiet_sun
+    theta[1] = theta[2]
+
+    f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav, theta[1] * theor_line.spectr_qs, kind='linear', fill_value="extrapolate")
+    f_nessi_fov = lambda theta: interp1d(theor_line.sst_wav, theta[1] * theor_line.spectr_fov, kind='linear', fill_value="extrapolate")
+    f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav, theta[1] * theor_line.saas_profile, kind='linear', fill_value="extrapolate")
+
+    wav = merge_wavelengths(sst_data._wavel - theta[0], theor_line.sst_wav)
+    if "CaK" in name_of_line:
+        wav = wav[:-1]
+
+    limit = derive_intensity_lim(sst_data, 
+                                 mins=[np.min(f_nessi_saas(theta)(wav)), np.min(f_nessi_fov(theta)(wav))],
+                                 maxs=[np.max(f_nessi_saas(theta)(wav)), np.max(f_nessi_fov(theta)(wav))])
+
+    def frame_visualization(sst_data, frame, theta):
+        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(20, 8), gridspec_kw={"width_ratios": [1, 1]})
+
+        sst_data.ccp_frame(frame, Show=False)
+        ax[0].set_title(f"spectral line {name_of_line} of {name_of_flare} flare")
+        sst_data.frame_integrated_spect(frame)
+        
+        if 'CaK' in name_of_line:
+            line_sst, = ax[0].plot(sst_data._wavel[:-1] - theta[0], sst_data.av_spect[:-1], '--', label='sst data') 
+        else:
+            line_sst, = ax[0].plot(sst_data._wavel - theta[0], sst_data.av_spect, '--', label='sst data')
+        
+        ax[0].plot(wav, f_nessi_fov(theta)(wav), label='nessi FOV')
+        ax[0].plot(wav, f_nessi_saas(theta)(wav), label='nessi full disk')
+        ax[0].legend()
+        ax[0].set_ylim(limit)
+
+        im = ax[1].imshow(Image.fromarray(sst_data.current_ccp[::-1, :]))
+        if show_boundary:
+            ax[1].imshow(Image.fromarray(sst_data.boundary[::-1, :]), alpha=0.3)
+        
+        ax[1].set_title("COCOplot")
+        text = ax[1].text(
+            -300, -20,
+            f"frame: {frame}, {time_hulp(sst_data.TIME[frame])}",
+            fontsize=12,
+            color='red'
+        )
+        
+        return fig, line_sst, im, text
+
+    fig, line_sst, im, text = frame_visualization(sst_data, frame, sst_data.theta_nessi_to_quiet_sun)
+
+    # Animation function with difference image computation
+    def animate(i):
+        frame = step * i
+        prev_frame = max(0, frame - frame_offset)
+
+        # Plotting spectral data
+        x = sst_data._wavel - theta[0]
+        y = sst_data.frame_integrated_spect(frame)
+        line_sst.set_data(x, y)
+
+        # Updating text
+        text.set_text(f"frame: {frame}, {str(sst_data._time[frame])[:8]}")
+
+        # Difference image
+        sst_data.ccp_frame(frame, Show=False)
+        current_frame_data = sst_data.current_ccp
+
+        sst_data.ccp_frame(prev_frame, Show=False)
+        prev_frame_data = sst_data.current_ccp
+
+        # Calculate the difference
+        diff_image = current_frame_data - prev_frame_data
+
+        # Update the displayed image with the difference image
+        im.set_array(Image.fromarray(diff_image[::-1, :]))
+
+        return line_sst, [im], text
+
+    # Animate
+    anim = animation.FuncAnimation(
+        fig, animate,
+        frames=(sst_data._number_of_frames - 1) // step,
+        interval=500
+    )
+
+    # Save the animation
+    anim.save(filename, fps=fps)
+    
+
+def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wavelength, step=1, show_boundary=False, frame_offset=5, time_offset=None):
+    import os
+    import numpy as np
+    from PIL import Image
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import interp1d
+    import matplotlib.animation as animation
+    
+    frame_offset = get_frame_offset_from_time_offset(sst_data, frame_offset, time_offset)
+    
+    filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_diff_{wavelength}_animation.mp4'
+
+    if os.path.isfile(filename):
+        print(f"The filename {filename} already exists")
+        return
+
+    # params
+    frame = 0
+    fps = 6
+    theta = sst_data.theta_nessi_to_quiet_sun
+    theta[1] = theta[2]
+
+    f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav, theta[1] * theor_line.spectr_qs, kind='linear', fill_value="extrapolate")
+    f_nessi_fov = lambda theta: interp1d(theor_line.sst_wav, theta[1] * theor_line.spectr_fov, kind='linear', fill_value="extrapolate")
+    f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav, theta[1] * theor_line.saas_profile, kind='linear', fill_value="extrapolate")
+
+    wav = merge_wavelengths(sst_data._wavel - theta[0], theor_line.sst_wav)
+    if "CaK" in name_of_line:
+        wav = wav[:-1]
+
+    limit = derive_intensity_lim(sst_data, 
+                                 mins=[np.min(f_nessi_saas(theta)(wav)), np.min(f_nessi_fov(theta)(wav))],
+                                 maxs=[np.max(f_nessi_saas(theta)(wav)), np.max(f_nessi_fov(theta)(wav))])
+    def data_wavelength(frame):
+        try:
+            return sst_data.datacube(frame)[wavelength]
+        except:
+            return sst_data.datacube(frame,wavelength]
+
+    # Animation function with difference image computation
+    def animate(i):
+        frame = step * i + frame_offset
+        prev_frame = step * i
+        if frame >= sst_data.number_of_frames:
+            raise IndexError(f'frame {frame} exceeds maximum frame number {sst_data.number_of_frames-1}')
+
+        # Plotting spectral data
+        x = sst_data._wavel - theta[0]
+        y = sst_data.frame_integrated_spect(frame)
+        line_sst.set_data(x, y)
+
+        # Updating text
+        text.set_text(f"frame: {frame}, {str(sst_data._time[frame])[:8]}")
+
+        # Calculate the difference
+        diff_image = data_wavelength(frame) - data_wavelength(prev_frame)
+
+        # Update the displayed image with the difference image
+        im.set_array(Image.fromarray(diff_image[::-1, :]))
+
+        return line_sst, [im], text
+
+    def frame_visualization(sst_data, frame, theta):
+        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(20, 8), gridspec_kw={"width_ratios": [1, 1]})
+
+        sst_data.ccp_frame(frame, Show=False)
+        ax[0].set_title(f"spectral line {name_of_line} of {name_of_flare} flare")
+        sst_data.frame_integrated_spect(frame)
+        
+        if 'CaK' in name_of_line:
+            line_sst, = ax[0].plot(sst_data._wavel[:-1] - theta[0], sst_data.av_spect[:-1], '--', label='sst data') 
+        else:
+            line_sst, = ax[0].plot(sst_data._wavel - theta[0], sst_data.av_spect, '--', label='sst data')
+        
+        ax[0].plot(wav, f_nessi_fov(theta)(wav), label='nessi FOV')
+        ax[0].plot(wav, f_nessi_saas(theta)(wav), label='nessi full disk')
+        ax[0].legend()
+        ax[0].set_ylim(limit)
+        
+        im = ax[1].imshow(Image.fromarray((data_wavelength(frame_offset) - data_wavelength(0))[::-1, :]))
+        if show_boundary:
+            ax[1].imshow(Image.fromarray(sst_data.boundary[::-1, :]), alpha=0.3)
+        
+        ax[1].set_title("COCOplot")
+        text = ax[1].text(
+            -300, -20,
+            f"frame: {frame}, {time_hulp(sst_data.TIME[frame])}",
+            fontsize=12,
+            color='red'
+        )
+        
+        return fig, line_sst, im, text
+
+    fig, line_sst, im, text = frame_visualization(sst_data, frame, sst_data.theta_nessi_to_quiet_sun)
+
+
+    # Animate
+    anim = animation.FuncAnimation(
+        fig, animate,
+        frames=(sst_data._number_of_frames - 1) // step,
+        interval=500
+    )
+
+    # Save the animation
+    anim.save(filename, fps=fps)
