@@ -1899,12 +1899,11 @@ def correct_flare_start(time, name):
     elif "14a" in name:
         Dt =  -60+27-50 # 16:50/17:22/17:09 15:27/17:27
     elif "14" in name:
-        Dt = 4 #   2014-06-10 & SPoCA 13052 & X1.5& 12:36/12:52/13:03 &12:40/12:58&100\% & (-879'', -305'') & 0.139& \Halpha & 4.0\\       
+        Dt = 4 #   2014-06-10 & SPoCA 13052 & X1.5& 12:36/12:52/13:03 &12:40/12:58&100\% & (-879'', -305'') & 0.139& \Halpha & 4.0\\ 
+    elif "23" in name: # from flare 2023 onwards this is been corrected in advance!
+        Dt = 0      
     else:
-        print("no time correction factor added.")
-        print('from flare 2023 onwards this is been corrected in advance! Check whether thats the case as well for this flare!')
-        Dt = 0
-        
+        raise ValueError(f'No start time defined for given name {name}')
     return time + Dt
 
 def get_full_path(name):
