@@ -1902,6 +1902,7 @@ def correct_flare_start(time, name):
         Dt = 4 #   2014-06-10 & SPoCA 13052 & X1.5& 12:36/12:52/13:03 &12:40/12:58&100\% & (-879'', -305'') & 0.139& \Halpha & 4.0\\       
     else:
         print("no time correction factor added.")
+        print('from flare 2023 onwards this is been corrected in advance! Check whether thats the case as well for this flare!')
         Dt = 0
         
     return time + Dt
@@ -1925,6 +1926,8 @@ def get_full_path(name):
         return "E:\solar flares\data\\2014-09-06"
     elif "14" in name:
         return "E:\solar flares\data\\2014-06-10"
+    elif "23" in name:
+        return "E:\solar flares\data\\2023-06-09"
     else:
         raise FileNotFoundError(f'For the profided name {name} no full path was defined.')
 

@@ -110,6 +110,8 @@ def most_quiet_flare_time(name):
         return [-90, -75]
     elif "14" in name:
         return [4.5,6]
+    elif "23" in name:
+        return [55,60]
     else:
         raise NameError(f'WRONG NAME: the line {name} had no most quiet flare time defined.')
 

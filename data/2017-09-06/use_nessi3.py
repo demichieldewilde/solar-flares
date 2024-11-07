@@ -357,6 +357,8 @@ class linestudier():
         if reduction > 1 :
             X, Y, boundary = reduce_(X, Y, boundary, reduction)
         qs_spectra = np.array([boundary for _ in range(len(self.sst_wav))])
+        if show:
+            print(X,Y,qs_spectra, areafactor)
         self.spectr_qs = -self.saas.get_diff_spectra_fov(X,Y,qs_spectra) / areafactor
         
         plt.plot(self.sst_wav, self.saas_profile, label="SAAS profile NESSI")
@@ -578,6 +580,38 @@ def get_file_path_fits(name):
     return name
 
 
+def official_start_flare(name):
+    """Returns the indices over which to average to get a good quiet pattern to calculate the contrast profile from.
+
+    Args:
+        name (string): name of the line
+
+    Returns:
+        [t0, t1]: begin and end time of the quiet flare time
+    """
+    # if '19'in name:
+    #     return [-10,-5]
+    # elif '13' in name:
+    #     return [60,65]
+    # elif '9u' in name:
+    #     return [50,55]
+    # elif "17a" in name:
+    #     return [100,110]
+    # elif "17" in name:
+    #     return [43,50]
+    # elif "15a" in name:
+    #     return [35,40]
+    # elif "15" in name:
+    #     return [70,80]
+    # elif "14a" in name:
+    #     return [-90, -75]
+    # elif "14" in name:
+    #     return [4.5,6]
+    if "23" in name:
+        return "16:48:00"
+    else:
+        raise NameError(f'WRONG NAME: the line {name} had no official start flare defined.')
+
 class SST_data_from_multiple_fits_files():
 
     # timeframe_to_filename_fits is a function that sends the index of the frame to the associated filename
@@ -618,29 +652,10 @@ class SST_data_from_multiple_fits_files():
         print(f"the wavelengths are {self._wavel = }")
         # Time file
         self._time = time
-        # if timesfilename == 'use_solarnet':
-        #     self._time = solarnet.get_time(self.filename, utc=True)
-        # else:
-        #     try:
-        #         self._tfile= rs(timesfilename)
-        #         try:
-        #             self._time=self._tfile["times"]
-        #         except KeyError:
-        #             try:
-        #                 self._time=self._tfile["time"]
-        #             except KeyError:
-        #                 print("Warning: times nor time are a key of the given timefile! You will have to change that and reload.\nThese are the keys:",end=" ")
-        #                 print(dict.keys())
-        #                 raise(KeyError())
-        #     except FileNotFoundError:
-        #         ImportWarning(f'the filename of the timefile is not found : {timesfilename}')
-        #         self._time=solarnet.get_time(self.filename, utc=True)
-
         # cont_point is the index of the point in the continuum to exculde this in plots (will be mostly -1)
         if cont_point is not None:
             self.define_cont_point(cont_point)
 
-        # self._t=self._time[3:216]         ==> figure out if realy needed????
         self._thresh=thresh
         # try:
         self.set_boundary_original(methode=boundary_methode,arguments=boundary_arguments)
@@ -1865,7 +1880,7 @@ def time_to_minutes(_time):
 
 def get_TIME(sst_data):
     TIME = time_to_minutes(sst_data._time)
-    TIME -= TIME[0]
+    TIME -= hulp_time(official_start_flare(sst_data.name_of_line))
     sst_data.TIME = TIME
     return TIME
 
