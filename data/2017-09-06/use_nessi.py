@@ -1932,14 +1932,24 @@ def get_full_path(name):
 
 
 def derive_intensity_lim(sst_data, mins = [], maxs = []):
-    n = sst_data._number_of_frames   
-    
-    for frame in range(0, n, max(n//10, 1)):
-        sst_data.frame_integrated_spect(frame)
-        mins.append(np.min(sst_data.av_spect))
-        maxs.append(np.max(sst_data.av_spect))
+    filename = f'line_data/intensity_lim_{sst_data.name_of_line}.npy'
+
+    try :
+        intensity_lim = np.load(filename)
+    except FileNotFoundError:     
+        print("Intensity limit calculation for first time.")   
+        n = sst_data._number_of_frames   
         
-    return np.min(np.array(mins)), np.max(np.array(maxs))
+        for frame in range(0, n, max(n//10, 1)):
+            sst_data.frame_integrated_spect(frame)
+            mins.append(np.min(sst_data.av_spect))
+            maxs.append(np.max(sst_data.av_spect))
+            
+        intensity_lim = np.min(np.array(mins)), np.max(np.array(maxs))
+        np.save(filename, intensity_lim)
+        print("Intensity limit is saved.")
+    return intensity_lim
+
 
 def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show_boundary=False):
     filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_animation.mp4'
@@ -2162,7 +2172,7 @@ def Difference_Movie(theor_line, sst_data, name_of_flare, name_of_line, step=1, 
     # Animate
     anim = animation.FuncAnimation(
         fig, animate,
-        frames=(sst_data._number_of_frames - 1) // step,
+        frames=(sst_data._number_of_frames - 1 - frame_offset) // step,
         interval=500
     )
 
@@ -2170,7 +2180,8 @@ def Difference_Movie(theor_line, sst_data, name_of_flare, name_of_line, step=1, 
     anim.save(filename, fps=fps)
     
 
-def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wavelength, step=1, show_boundary=False, frame_offset=5, time_offset=None):
+def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wavelength, step=1, 
+                          show_boundary=False, frame_offset=5, time_offset=None, only_frame=None):
     import os
     import numpy as np
     from PIL import Image
@@ -2182,7 +2193,7 @@ def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wav
     
     filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_diff_{wavelength}_animation.mp4'
 
-    if os.path.isfile(filename):
+    if os.path.isfile(filename) and only_frame is None:
         print(f"The filename {filename} already exists")
         return
 
@@ -2206,14 +2217,14 @@ def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wav
     def data_wavelength(frame):
         try:
             return sst_data.datacube(frame)[wavelength]
-        except:
-            return sst_data.datacube(frame,wavelength]
+        except TypeError:
+            return sst_data.datacube[frame,0,wavelength]
 
     # Animation function with difference image computation
     def animate(i):
         frame = step * i + frame_offset
         prev_frame = step * i
-        if frame >= sst_data.number_of_frames:
+        if frame >= sst_data.datacube.shape[0]:
             raise IndexError(f'frame {frame} exceeds maximum frame number {sst_data.number_of_frames-1}')
 
         # Plotting spectral data
@@ -2229,6 +2240,9 @@ def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wav
 
         # Update the displayed image with the difference image
         im.set_array(Image.fromarray(diff_image[::-1, :]))
+        
+        # give status
+        print(frame, end="\r")
 
         return line_sst, [im], text
 
@@ -2249,7 +2263,9 @@ def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wav
         ax[0].legend()
         ax[0].set_ylim(limit)
         
-        im = ax[1].imshow(Image.fromarray((data_wavelength(frame_offset) - data_wavelength(0))[::-1, :]))
+        D = (data_wavelength(frame_offset + frame) - data_wavelength(frame))
+        
+        im = ax[1].imshow(D[::-1, :], cmap='gray')
         if show_boundary:
             ax[1].imshow(Image.fromarray(sst_data.boundary[::-1, :]), alpha=0.3)
         
@@ -2261,17 +2277,27 @@ def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wav
             color='red'
         )
         
+        plt.show()
+        
         return fig, line_sst, im, text
-
-    fig, line_sst, im, text = frame_visualization(sst_data, frame, sst_data.theta_nessi_to_quiet_sun)
+    
+    if only_frame is not None:
+        print(f"visulizing difference image at frame {only_frame}.")
+        frame_visualization(sst_data, only_frame, sst_data.theta_nessi_to_quiet_sun)
+        return
+    
+    print("Preparing first frame.")
+    fig, line_sst, im, text = frame_visualization(sst_data, 0, sst_data.theta_nessi_to_quiet_sun)
 
 
     # Animate
     anim = animation.FuncAnimation(
         fig, animate,
-        frames=(sst_data._number_of_frames - 1) // step,
+        frames=(sst_data._number_of_frames - 1 - frame_offset) // step,
         interval=500
     )
-
+    
     # Save the animation
+    print('saving the animation. Now calculating frame:')
     anim.save(filename, fps=fps)
+    
