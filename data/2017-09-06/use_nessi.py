@@ -2239,7 +2239,7 @@ def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wav
         diff_image = data_wavelength(frame) - data_wavelength(prev_frame)
 
         # Update the displayed image with the difference image
-        im.set_array(Image.fromarray(diff_image[::-1, :]))
+        im.set_array(diff_image[::-1, :])
         
         # give status
         print(frame, end="\r")
