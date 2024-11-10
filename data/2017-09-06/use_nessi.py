@@ -158,7 +158,7 @@ class linestudier():
     enroll_atlas()
         We include an atlas to compare the data with (always good to check if all works well!)
         Cut the atlas near where the line is (Keep in mind that we use air wavelenths,
-        and they use vacuum, so youll need to shift it)
+        and they use vacuum, so you'll need to shift it)
     '''
     def enroll_atlas(self):
         if self.neglect_atlas:
@@ -826,9 +826,9 @@ class SST_data():
         if variation:
             npxl = (ymax-ymin)*(xmax-xmin) #number of pixels
             if np.any(np.isnan(self.zeros)):
-                self.var_spect = np.array([np.nanstd(self.datacube[frame,0,i,ymin:ymax,xmin:xmax]) for i in range(len(self._wavel))])/npxl**0.5
+                self.var_spect = np.array([np.nanstd(self.datacube[frame,0,i,ymin:ymax,xmin:xmax]/self.scalar) for i in range(len(self._wavel))])/npxl**0.5
             else:
-                self.var_spect = np.array([np.std(self.datacube[frame,0,i,ymin:ymax,xmin:xmax])for i in range(len(self._wavel))])/npxl**0.5
+                self.var_spect = np.array([np.std(self.datacube[frame,0,i,ymin:ymax,xmin:xmax]/self.scalar)for i in range(len(self._wavel))])/npxl**0.5
 
         return self.av_spect
 
@@ -1809,10 +1809,27 @@ def conv_time_wav(name, do_wav=True, do_time = True):
         k.append("line_data/time{name}.npy")
     return k
 
-def save_for_further_analysis(sst_data, theor_line):
-    # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
-    theta = sst_data.theta_nessi_to_quiet_sun
+def convert_boundary_to_nan(boundary):
+    return np.where(boundary == 0, np.nan, 0)
 
+def get_fov_areafactor(sst_data, sr=959.63):
+    X, Y = sst_data.fov
+    boundary = convert_boundary_to_nan(sst_data.boundary[:-1, :-1])
+    X /= sr
+    Y /= sr
+    r = (X[1:,1:] + X[0:-1,0:-1])**2 / 4 + (Y[1:,1:] - Y[0:-1,0:-1])**2 / 4
+    r = np.where(r >1, np.nan, 0)
+    boundary = boundary * r
+    dx = (X[1:,1:] - X[0:-1,0:-1])
+    dy = (Y[1:,1:] - Y[0:-1,0:-1])
+    return np.nansum(dx*dy+boundary) / np.pi
+
+def save_for_further_analysis(sst_data, theor_line):
+    exists_theor_line = theor_line is not None
+    
+    # theta = [horizontale translatie, verticale translatie, verticale schaalfactor]
+    theta = sst_data.theta_nessi_to_quiet_sun if exists_theor_line else [0,0,1]
+    
     # check that FOV_spectrum is saved:
     sst_data.calculate__FOV_spect_over_time(show_total_spectrum=True)
 
@@ -1823,20 +1840,25 @@ def save_for_further_analysis(sst_data, theor_line):
     if not hasattr(sst_data, 'std_quiet_sun'):
         sst_data.stand_dev_quiet_sun()
     np.save(filename, np.array([sst_data._wavel-theta[0], sst_data.quiet_spect/theta[2], sst_data.std_quiet_sun/theta[2]]))
-    
+
     # small comparison for area factor
-    print(f'The areafactor for THIS flare is {theor_line.fov_areafactor} compared to 60**2/np.pi/959.63**2 = {60**2/np.pi/959.63**2}.\
+    a_factor = theor_line.fov_areafactor if exists_theor_line else get_fov_areafactor(sst_data)
+    print(f'The areafactor for THIS flare is {a_factor} compared to 60**2/np.pi/959.63**2 = {60**2/np.pi/959.63**2}.\
         \nHowever normaly this should be alike and since the gauge is bij the Quiet sun, the conversion should be oké.\
-        \nPercentage: {round(100*theor_line.fov_areafactor/(60**2/np.pi/959.63**2), 2)}%.')
-    a = [theor_line.fov_areafactor, *theta]
+        \nPercentage: {round(100*a_factor/(60**2/np.pi/959.63**2), 2)}%.')
+    a = [a_factor, *theta]
     np.save(get_file_path_line_data(f"area_theta_{sst_data.name_of_line}"), a)
 
     # save nessi best clv spectrum and full disk
-    filename = get_file_path_line_data(f"nessi_{sst_data.name_of_line}")
-    if hasattr(theor_line, "spectr_fov"):
-        np.save(filename, np.array([theor_line.sst_wav, theor_line.saas_profile, theor_line.spectr_fov]))
+    if exists_theor_line:
+        filename = get_file_path_line_data(f"nessi_{sst_data.name_of_line}")
+        if hasattr(theor_line, "spectr_fov"):
+            np.save(filename, np.array([theor_line.sst_wav, theor_line.saas_profile, theor_line.spectr_fov]))
+        else:
+            raise TypeError("Use un3.linestudier!")
     else:
-        raise TypeError("Use un3.linestudier!")
+        filename = get_file_path_line_data(f"fake_nessi_{sst_data.name_of_line}") 
+        np.save(filename, np.array([sst_data._wavel, sst_data.quiet_spect, sst_data.atlas_saas_profile/sst_data.theta_nessi_to_quiet_sun[2]]))
     # save time in minutes
     if not hasattr(sst_data, "TIME"):
         get_TIME(sst_data)
@@ -1862,7 +1884,15 @@ def load_for_further_analysis(names_of_lines, full_path=None):
 
         # load nessi best clv spectrum and full disk
         filename = get_file_path_line_data(f"nessi_{name}", full_path=full_path)
-        data[f'nessi_{name}'] = np.load(filename)
+        filename2 = get_file_path_line_data(f"fake_nessi_{name}", full_path=full_path)
+        if os.path.isfile(filename):
+            data[f'nessi_{name}'] = np.load(filename)
+            data[f'True_nessi'] = True
+        elif os.path.isfile(filename2):
+            data[f'nessi_{name}'] = np.load(filename2)
+            data[f'True_nessi'] = False
+        else:
+            raise FileNotFoundError(f'Neither {filename} or {filename2} are present in the folder!')        
 
         # load time in minutes
         filename = get_file_path_line_data(f"TIME_{name}", full_path=full_path)
@@ -1950,6 +1980,13 @@ def derive_intensity_lim(sst_data, mins = [], maxs = []):
         print("Intensity limit is saved.")
     return intensity_lim
 
+class fake_theor_line():
+    
+    def __init__(self, sst_wav, quiet_spect, saas_profile) -> None:
+        self.sst_wav = sst_wav
+        self.spectr_qs = quiet_spect
+        self.spectr_fov = quiet_spect
+        self.saas_profile = saas_profile
 
 def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show_boundary=False):
     filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_animation.mp4'
@@ -1965,6 +2002,10 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
     nSeconds = 5
     theta = sst_data.theta_nessi_to_quiet_sun
     theta[1] = theta[2]
+    
+    if theor_line is None:
+        theor_line = fake_theor_line(sst_data._wavel, sst_data.quiet_spect, sst_data.atlas_saas_profile / theta[2])
+        theta = [0,0,1]
 
     f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav , theta[1] * theor_line.spectr_qs 
                                     , kind='linear', fill_value="extrapolate")

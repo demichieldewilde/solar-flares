@@ -16,7 +16,7 @@ area_factor = 60**2/np.pi/sr**2
 def element_from_name(name):
     if 'CaK' in name:
         return 'CaK(2)' if '(2)' in name else 'CaK'
-    lines = ['Ha', 'CaI', "Fe6173", "Hbeta"]
+    lines = ['Ha', 'CaI', "Fe6173", "Hbeta", "He"]
     for line in lines:
         if line in name:
             return "CaIR" if line=="CaI" else line
