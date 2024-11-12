@@ -341,7 +341,8 @@ def smooth2(data, n_wav=500, n_time=1, mode='same'):
     sum_kernel = np.sum(kernel)
     return convolve2d(data, kernel, mode=mode)
 
-def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar=True, vlim=None, vlimscale=1, logscale=False, xlim=None):
+def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar=True, vlim=None, 
+                    vlimscale=1, logscale=False, xlim=None, cmap='RdBu_r'):
     if vlim is None:   
         vmin = np.percentile(Z, 2)
         vmax = np.percentile(Z, 98)
@@ -349,10 +350,10 @@ def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar
         vmin, vmax = vlim
         
     if logscale:
-            pcm = ax.pcolormesh(X, Y, Z, cmap='RdBu_r', norm=colors.SymLogNorm(linthresh=0.03, linscale=0.03,
+            pcm = ax.pcolormesh(X, Y, Z, cmap=cmap, norm=colors.SymLogNorm(linthresh=0.03, linscale=0.03,
                                             vmin=vmin, vmax=vmax, base=10), shading='auto')
     else:
-        pcm = ax.pcolormesh(X, Y, Z, cmap='RdBu_r',vmin=vmin, vmax=vmax, shading='auto', label=f'$\Delta I / \sigma$ []')
+        pcm = ax.pcolormesh(X, Y, Z, cmap=cmap,vmin=vmin, vmax=vmax, shading='auto', label=f'$\Delta I / \sigma$ []')
 
     if seperate_colorbar:
         # print('X', X, 'Y', Y, 'Z', Z)

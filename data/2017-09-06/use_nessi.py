@@ -1887,10 +1887,10 @@ def load_for_further_analysis(names_of_lines, full_path=None):
         filename2 = get_file_path_line_data(f"fake_nessi_{name}", full_path=full_path)
         if os.path.isfile(filename):
             data[f'nessi_{name}'] = np.load(filename)
-            data[f'True_nessi'] = True
+            data[f'True_nessi_{name}'] = True
         elif os.path.isfile(filename2):
             data[f'nessi_{name}'] = np.load(filename2)
-            data[f'True_nessi'] = False
+            data[f'True_nessi_{name}'] = False
         else:
             raise FileNotFoundError(f'Neither {filename} or {filename2} are present in the folder!')        
 

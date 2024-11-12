@@ -302,7 +302,6 @@ def cut_off_data(data, up_lim=None, down_lim=None):
     return cutoff_data
 
 def visualize_analysis(res, voigt, wav, time, name, non_centered=True, with_frame_numbers=False):
-    # TODO: delete this line
     if True:
         time = np.arange(len(time))
     fig, ax = plt.subplots()
