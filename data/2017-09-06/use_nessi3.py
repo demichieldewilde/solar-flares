@@ -580,7 +580,7 @@ def get_file_path_fits(name):
     return name
 
 
-def official_start_flare(name):
+def official_start_flare(name, except_time=None):
     """Returns the indices over which to average to get a good quiet pattern to calculate the contrast profile from.
 
     Args:
@@ -589,28 +589,13 @@ def official_start_flare(name):
     Returns:
         [t0, t1]: begin and end time of the quiet flare time
     """
-    # if '19'in name:
-    #     return [-10,-5]
-    # elif '13' in name:
-    #     return [60,65]
-    # elif '9u' in name:
-    #     return [50,55]
-    # elif "17a" in name:
-    #     return [100,110]
-    # elif "17" in name:
-    #     return [43,50]
-    # elif "15a" in name:
-    #     return [35,40]
-    # elif "15" in name:
-    #     return [70,80]
-    # elif "14a" in name:
-    #     return [-90, -75]
-    # elif "14" in name:
-    #     return [4.5,6]
     if "23" in name:
         return "16:48:00"
-    else:
-        raise NameError(f'WRONG NAME: the line {name} had no official start flare defined.')
+    for yy in ['19','13''9u', "17a","17","15a","15","14a","14"]:
+        if yy in name:
+            print(f'Not official start flare defined for {name} falling back to first of TIME[0], the execpt_time {except_time}.')
+            return except_time
+    raise NameError(f'WRONG NAME: the line {name} had no official start flare defined.')
 
 class SST_data_from_multiple_fits_files():
 
@@ -1880,7 +1865,7 @@ def time_to_minutes(_time):
 
 def get_TIME(sst_data):
     TIME = time_to_minutes(sst_data._time)
-    TIME -= hulp_time(official_start_flare(sst_data.name_of_line))
+    TIME -= hulp_time(official_start_flare(sst_data.name_of_line, except_time=sst_data._time[0]))
     sst_data.TIME = TIME
     return TIME
 
