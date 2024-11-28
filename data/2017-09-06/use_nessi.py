@@ -2265,7 +2265,7 @@ def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wav
     def animate(i):
         frame = step * i + frame_offset
         prev_frame = step * i
-        if frame >= sst_data.datacube.shape[0]:
+        if frame >= sst_data._number_of_frames:
             raise IndexError(f'frame {frame} exceeds maximum frame number {sst_data.number_of_frames-1}')
 
         # Plotting spectral data
