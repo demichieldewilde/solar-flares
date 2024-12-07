@@ -145,20 +145,46 @@ def retreive_initial_guess(initial_guess, frame, many_guesses=True):
             return initial_guess[i-1][1]
     return initial_guess[-1][1]
 
+def retreive_offset(offset, frame, many_guesses=True):
+    """retreives the initial guess from the correct format
+    when a list of four is given this is the initial guess for alle frames
+    otherwise the format is 
+    [[framenumber start, associated initial guess],
+    [framenumber start, associated initial guess],
+    ...]
+    """
+    try:
+        if np.shape(offset) == (1,):
+            # print("standard initial guess format")
+            many_guesses = False
+    except ValueError:
+        many_guesses = True
+    if not many_guesses:
+         return offset
+    for i, j in enumerate(offset):
+        if frame < j[0]:
+            return offset[i-1][1]
+    return offset[-1][1]
 
-def contrast_fit_voigt(wav, contrast, initial_guess, time, plot_rate=1000, neglect_points=[], 
-                       fix_ind=[], quiet_frames=[], exclude_frames=[], hard_fix=False):
+
+def contrast_fit_voigt(wav, contrast, offset,  initial_guess, time, plot_rate=1000, neglect_points=[], 
+                       fix_ind=[], quiet_frames=[], exclude_frames=[], hard_fix=False, frame_range=None):
 
     param_fit = []
     y_fits = []
     residuals = []
     n_frames = np.shape(contrast)[0]
+    if frame_range is None:
+        frame_range = range(n_frames)
     
     # parameter fitting
-    for i in range(n_frames):
+    for i in frame_range:
         i_g = retreive_initial_guess(initial_guess, i)
+        i_o = retreive_offset(offset, i)
+        i_o -= 1 
+
         # print(f"frame {i} with initial guess : {i_g}")
-        if i in quiet_frames:
+        if (i in quiet_frames) and False:
             k = i_g
             k[0] = 0
             popt = average_last_of_params(param_fit, num=5, initial_guess=k, fix_ind=fix_ind)
@@ -171,18 +197,18 @@ def contrast_fit_voigt(wav, contrast, initial_guess, time, plot_rate=1000, negle
             average_guess = average_last_of_params(param_fit, num=5, initial_guess=i_g, fix_ind=fix_ind)
             try:            
                 w = np.delete(wav, neglect_points, axis=0)
-                C = np.delete( contrast[i], neglect_points, axis=0)
+                C = np.delete( contrast[i] + i_o, neglect_points, axis=0)
                 hard_fix_ind = fix_ind if hard_fix else []
                 F = fit_voigt(w, C, average_guess, fix_ind)
                 param_fit.append(F)
 
                 if i%plot_rate == 0:
                     print(f'frame {i} at time {time[i]} with {param_fit[-1] = }. Here comes the plot:')
-                    plot_data_fit_voigt(wav, contrast[i], average_guess, popt=F[0], neglect_points=neglect_points)
+                    plot_data_fit_voigt(wav, contrast[i] +i_o, average_guess, popt=F[0], neglect_points=neglect_points)
 
             except RuntimeError:
                 print(f"At frame {i} at time {time[i]} the voigt fitting was not succesfull and average guess ({average_guess}) is used as params and as std of params. ")
-                param_fit.append(((average_guess, average_guess) if i==0 else param_fit[-1]))
+                param_fit.append(((average_guess, average_guess) if i==frame_range[0] else param_fit[-1]))
 
     # excluded frames interpolation
     param_fit = np.array(param_fit)
@@ -195,8 +221,8 @@ def contrast_fit_voigt(wav, contrast, initial_guess, time, plot_rate=1000, negle
     # print('it is smoothent')
 
     # residual calculation
-    for i in range( n_frames):
-        y_data = contrast[i]
+    for i, j in enumerate(frame_range):
+        y_data = contrast[j] - 1
         popt = param_fit[i][0]
         y_voigt = voigt(wav, popt[0], popt[1], popt[2], popt[3])
         y_fits.append(y_voigt)
@@ -244,8 +270,8 @@ def nan_interpolate(one_param):
     return interp_func(np.arange(len(one_param)))
 
 def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_points=None, 
-                  fix_ind=None, hard_fix=False, exclude_frames=[]):
-    offset -= 1 
+                  fix_ind=None, hard_fix=False, exclude_frames=[], frame_range=None):
+    
     if neglect_points is None:
         neglect_points = []
     if fix_ind is None:
@@ -253,16 +279,21 @@ def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_poi
     wav, contr , time, line, std = un2.contrast_FD_data(name, data, quiet_sun_subtraction=False, num=40)
     print(f'The average is {np.average(contr)}')
     
-    quiet_frames = np.where(un2.most_quiet_frames(name, time))[0] 
+    frame_range = [i for i in frame_range if i < len(time)]
+    
+    quiet_frames = np.where(un2.most_quiet_frames(name, time))[0]
     # print(exclude_frames)
     # print(np.shape(wav), np.shape(DFOV), np.shape(time), np.shape(line))
     # Initial guess: [amp_v, cen_v, sigma_v, gamma_v, amp_g, cen_g, sigma_g]
     # print(np.shape(wav), np.shape(np.delete(wav, neglect_points, axis=0)), wav, np.delete(wav, neglect_points, axis=0))
     # print(np.shape(DFOV+offset), np.shape(np.delete(DFOV+offset, neglect_points, axis=1)), DFOV+offset, np.delete(DFOV+offset, neglect_points, axis=1))
-    params, voigt, res = contrast_fit_voigt(wav, contr+offset, initial_guess, time, plot_rate, 
-                                              neglect_points, fix_ind, quiet_frames=quiet_frames, exclude_frames=exclude_frames, hard_fix=hard_fix)
-    visualize_analysis(res, voigt, wav, time, name)
-    save_voigt_fits(name, params, res)
+    params, voigt, res = contrast_fit_voigt(wav, contr, offset, initial_guess, time, plot_rate, 
+                                              neglect_points, fix_ind, quiet_frames=quiet_frames, exclude_frames=exclude_frames, 
+                                              hard_fix=hard_fix, frame_range=frame_range)
+    visualize_analysis(res, voigt, wav, time, name, frame_range=frame_range)
+    if frame_range is None:
+        frame_range = np.arange(len(time))
+    save_voigt_fits(name, params, res, frame_range, Nt=len(time))
         
 def display_OK():
     ok = [
@@ -274,12 +305,26 @@ def display_OK():
     ]
     for line in ok:
         print(line * 5)  # Print 
-
     
+def save_voigt_fits(name, params, res, frame_range, Nt):
     
-def save_voigt_fits(name, params, res):
     fname = f"fit_data/voigt_data_{name}.npz"
-    np.savez(fname, params, res)
+    
+    try:
+        with np.load(fname) as data:
+            P = data['arr_0']
+            R = data['arr_1']
+    except FileNotFoundError:
+        Nw = np.shape(params)[1]
+        Np = 4
+        P = np.zeros(Nt, Np)
+        R = np.zeros(Nt,Nw)
+        
+    for i, j in enumerate(frame_range):
+        P[j] = params[i]
+        R[j] = res[i]
+        
+    np.savez(fname, P, R)
 
 def load_voigt_data(name):
     fname = f"D:/solar flares/data/voigt_fitting/fit_data/voigt_data_{name}.npz"
@@ -301,9 +346,11 @@ def cut_off_data(data, up_lim=None, down_lim=None):
     cutoff_data = np.where(data < down_lim, down_lim, cutoff_data)
     return cutoff_data
 
-def visualize_analysis(res, voigt, wav, time, name, non_centered=True, with_frame_numbers=False):
+def visualize_analysis(res, voigt, wav, time, name, non_centered=True, with_frame_numbers=False, frame_range=None):
+    if frame_range is None:
+        frame_range = np.arange(len(time))
     if True:
-        time = np.arange(len(time))
+        time = np.array(frame_range)
     fig, ax = plt.subplots()
 
     vmax = np.percentile(res, 97)
