@@ -154,7 +154,7 @@ def retreive_offset(offset, frame, many_guesses=True):
     ...]
     """
     try:
-        if np.shape(offset) == (1,):
+        if type(offset) in [int, float]:
             # print("standard initial guess format")
             many_guesses = False
     except ValueError:
