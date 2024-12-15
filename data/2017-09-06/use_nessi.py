@@ -617,7 +617,7 @@ class SST_data():
     It does it only for 1 color outside!!!
     TODO: go to two
     '''
-    def set_boundary_original(self, methode = 'search', arguments=None):
+    def set_boundary_original(self, methode = 'search', arguments={}):
 
         if methode == 'search':
             self.zeros = self.calculate_zeros()
@@ -634,7 +634,22 @@ class SST_data():
             print('np.shape(self.datacube)',np.shape(self.datacube))
             self.boundary = np.ones(np.shape(self.datacube)[-2:])
             print()
-
+            
+        elif methode == 'search_overlap':
+            print("Use arguments as dictionary with 'frames_of_overlap' to define a list of considerd frames to calculate overlap")
+            f_o_o = arguments.get('frames_of_overlap', range(0,self._number_of_frames, 100))
+            for i,frame in enumerate(f_o_o):
+                self.zeros = self.calculate_zeros(frame=frame)
+                R = self.calculate_boundary(frame=frame) 
+                # print(R[::100, ::100])
+                # plt.imshow(R)
+                # plt.show()
+                self.boundary = R  if i==0 else R * self.boundary
+                print(f'calculated boundary at frame {frame}')
+            print(f"calculated boundary over folowing frames {f_o_o}")
+        
+        else:
+            raise ValueError(f"The given methode {methode} is not one of the implemented: searchn By_user, No Boundary or search_overlap ")
         self.check_scalar_not_nan()
 
 
@@ -653,7 +668,7 @@ class SST_data():
             self.frame_integrated_spect(0)
             self.check_scalar_not_nan
 
-    def calculate_zeros(self, zero="still to search"):
+    def calculate_zeros(self, frame=0, zero="still to search"):
 
         '''
         Here there are 2 posibilities for the 'outside' of te frame. Either these are denoted by NaN and then
@@ -664,12 +679,13 @@ class SST_data():
         suppose this collor is not different for any of the frames. So we find the color in frame = 0
         '''
 
-        if np.any(np.isnan(self.datacube[0, 0,:,:,:])):
+        if np.any(np.isnan(self.datacube[frame, 0,:,:,:])):
             return [np.nan]
 
         xmax=np.shape(self.datacube)
         ymax=xmax[3]
         xmax = xmax[4]
+        a = np.average(self.datacube[frame])
 
         if zero=="still to search":
             # to find zeros. If not the param
@@ -682,9 +698,6 @@ class SST_data():
             pixels_to_check = [[0,ymax//2],[xmax//2,0],[0+5,ymax//2],[xmax//2,0+5],[0,ymax//2+5],[xmax//2,0+5],
                                 [0,ymax//2-5],[xmax//2-5,0],[0+5,ymax//2+5],[xmax//2+5,0+5],[0+5,ymax//2-5],[xmax//2-1,0+5]]
 
-            frame = 0
-
-
             # as guess we take the first and check if they all match
             zero = self.datacube[frame, 0,:,ymax//2,0]
             possible = True
@@ -694,7 +707,7 @@ class SST_data():
                 # print("zero:", zero)
                 # print("vergelijk met:", self.datacube[frame, 0,:,y,x])
 
-                if not np.all(zero == self.datacube[frame, 0,:,y,x]):
+                if not np.all(np.where(np.abs(self.datacube[frame,0, :,y,x]-zero) < 0.01 * a, 1, 0)):
                     possible = False
                             # print("en ", possible, "bevonden")
 
@@ -702,29 +715,47 @@ class SST_data():
             if not possible:
                 print("IMPORTANT MESSAGE\nThe middel of the outside lines is in the data.\n Give manualy the RGB value of the outside in.")
                 print("zero was:", zero)
-                return #?????
+                print("now only checking the middle of the edges")
+            
+                pixels_to_check = [[0,ymax//2],[xmax//2,0],[-1,ymax//2],[xmax//2,-1]]
+
+                # as guess we take the first and check if they all match
+                zero = self.datacube[frame, 0,:,ymax//2,-1]
+                possible = True
+
+                for item in pixels_to_check:
+                    x,y = item
+                    print(self.datacube[frame, 0,:,y,x]- zero)
+                    if not np.all(np.where(np.abs(self.datacube[frame,0, :,y,x]-zero) < 0.01 * a, 1, 0)):
+                        possible = False
+                if not possible:
+                    print("IMPORTANT MESSAGE\n Also the middle of the edges don't work. Though still going with the zero")
+                    print("zero was:", zero)
+                    
+                    return [zero]
 
         return [zero]
-
-
-    def calculate_boundary(self, for_all_frame=False, exclude_wav=[]):
-        frame = 0
-        if np.any(np.isnan(self.zeros)):
+    
+    def calculate_boundary(self, for_all_frame=False, exclude_wav=[], frame = 0):
+        
+        if np.isnan(self.zeros[0][0]):
+            print('found NAN')
             return np.where(np.isnan(self.datacube[frame,0,0,:,:]), 0, 1)
 
         shape=np.shape(self.datacube)
         ymax=shape[3]
         xmax = shape[4]
 
-        frames = range(shape[0]) if for_all_frame else [0]
+        # frames = range(shape[0]) if for_all_frame else [0]
         zero = self.zeros[0]
         
         l = len(self._wavel)
-
+        a = np.average(self.datacube[frame])
         R = np.ones(self.shape[3:])
+        # print(np.shape(R), np.shape(a), np.shape(zero[0]))
         for i in range(l):
             if i not in exclude_wav:
-                R *= np.where(self.datacube[0,0,i,:,:]==zero[i], 1, 0)
+                R *= np.where(np.abs(self.datacube[frame,0, i,:,:]-zero[i]) < 0.01 * a, 1, 0)
         R = 1 - R        
         return R
 
@@ -994,45 +1025,45 @@ class SST_data():
             e.g. X = [[(750,940), (50,300)], [(650,975), (294,662)]] (2 patches)
 
     '''
-    def possible_quiet_sun_patches(self, frame, theor_line, X, restrict_to_line=False):
+    # def possible_quiet_sun_patches(self, frame, theor_line, X, restrict_to_line=False):
 
-        fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(15, 7))
+    #     fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(15, 7))
 
-        fig.suptitle('Possible quiet sun patches', fontsize=16)
+    #     fig.suptitle('Possible quiet sun patches', fontsize=16)
 
-        self.ccp_frame(frame,Show=False)
+    #     self.ccp_frame(frame,Show=False)
 
-        colors=['red', 'blue', 'yellow', 'orange', 'pink', 'purple', 'limegreen', 'darkgreen', 'gray']
+    #     colors=['red', 'blue', 'yellow', 'orange', 'pink', 'purple', 'limegreen', 'darkgreen', 'gray']
 
-        ax[0].set_title("spectral lines of SST frame "+str(frame)+" H\u03B1 with normalized intensity")
-        self.frame_integrated_spect(frame)
-        ax[0].plot(self._wavel, self.av_spect, '--', label='overal spectrum sst')
-        theta = [0,0,1]
-        ax[0].plot(theor_line.sst_wav + theta[0], theta[2] * theor_line.sst_dc*theor_line.sst_clv[12] + theta[1], '--', label='nessi mu = 0.76', color='black')
+    #     ax[0].set_title("spectral lines of SST frame "+str(frame)+" H\u03B1 with normalized intensity")
+    #     self.frame_integrated_spect(frame)
+    #     ax[0].plot(self._wavel, self.av_spect, '--', label='overal spectrum sst')
+    #     theta = [0,0,1]
+    #     ax[0].plot(theor_line.sst_wav + theta[0], theta[2] * theor_line.sst_dc*theor_line.sst_clv[12] + theta[1], '--', label='nessi mu = 0.76', color='black')
 
-        ax[1].imshow(self.current_ccp,origin='lower')
-        ax[1].set_title("COCOplot of frame "+str(frame))
-        t=0
-        for i in X:
-            xlim=i[0]
-            ylim=i[1]
-            if t<len(colors):
-                color=colors[t]
-            else:
-                color = np.array(np.random.choice(range(256), size=3))/255
-            t+=1
-            ax[0].plot(self._wavel, self.frame_integrated_spect(frame, xlim=xlim, ylim=ylim), color=color, label=str(color)+' area') #
-            ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color)
-        ax[0].legend()
-        if hasattr(self, 'line_lim') and restrict_to_line:
-            ax[0].set_xlim(self.line_lim)
+    #     ax[1].imshow(self.current_ccp,origin='lower')
+    #     ax[1].set_title("COCOplot of frame "+str(frame))
+    #     t=0
+    #     for i in X:
+    #         xlim=i[0]
+    #         ylim=i[1]
+    #         if t<len(colors):
+    #             color=colors[t]
+    #         else:
+    #             color = np.array(np.random.choice(range(256), size=3))/255
+    #         t+=1
+    #         ax[0].plot(self._wavel, self.frame_integrated_spect(frame, xlim=xlim, ylim=ylim), color=color, label=str(color)+' area') #
+    #         ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color)
+    #     ax[0].legend()
+    #     if hasattr(self, 'line_lim') and restrict_to_line:
+    #         ax[0].set_xlim(self.line_lim)
 
-        plt.show()
+    #     plt.show()
         
 
     def possible_quiet_sun_patches(self, frame, theor_line, X, restrict_to_line=False):
 
-        fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(15, 7))
+        fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(8, 4))
 
         fig.suptitle('Possible quiet sun patches', fontsize=16)
 
@@ -1066,6 +1097,10 @@ class SST_data():
                 label=f'{str(color)} area',
             )
             ax[1].plot([xlim[0], xlim[1], xlim[1], xlim[0], xlim[0]], [ylim[0],ylim[0],ylim[1], ylim[1], ylim[0]], color=color)
+        ax[1].set_xlabel(r'Horizontal position [arcsec]')
+        ax[1].set_ylabel(r'Vertical position [arcsec]')        
+        ax[0].set_xlabel(r'Wavelength [$\AA$]')
+        ax[0].set_ylabel('Relative intensity []')
         ax[0].legend()
         if hasattr(self, 'line_lim') and restrict_to_line:
             ax[0].set_xlim(self.line_lim)
