@@ -213,7 +213,7 @@ def contrast_fit_voigt(wav, contrast, offset,  initial_guess, time, plot_rate=10
     # excluded frames interpolation
     param_fit = np.array(param_fit)
     if len(exclude_frames) > 0:
-        print(exclude_frames, len(exclude_frames), param_fit)
+        # print(exclude_frames, len(exclude_frames), param_fit)
         param_fit = param_fit_nan_interpolate(param_fit)
     
     # parameter smoothing
@@ -279,8 +279,10 @@ def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_poi
     wav, contr , time, line, std = un2.contrast_FD_data(name, data, quiet_sun_subtraction=False, num=40)
     print(f'The average is {np.average(contr)}')
     
-    frame_range = [i for i in frame_range if i < len(time)]
-    
+    if frame_range is not None:
+        frame_range = [i for i in frame_range if i < len(time)]
+    else:
+        frame_range = range(len(time))
     quiet_frames = np.where(un2.most_quiet_frames(name, time))[0]
     # print(exclude_frames)
     # print(np.shape(wav), np.shape(DFOV), np.shape(time), np.shape(line))
@@ -294,11 +296,12 @@ def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_poi
     if frame_range is None:
         frame_range = np.arange(len(time))
     save_voigt_fits(name, params, res, frame_range, Nt=len(time))
+    display_OK()
         
 def display_OK():
     ok = [
         "  ____    _   __",
-        " / __ \\  | | / /",
+        " / __ \  | | / /",
         "| |  | | | |/ /",
         "| |_ | | |   \\",
         " \____/  |_|\_\\"
@@ -315,13 +318,13 @@ def save_voigt_fits(name, params, res, frame_range, Nt):
             P = data['arr_0']
             R = data['arr_1']
     except FileNotFoundError:
-        Nw = np.shape(params)[1]
+        Nw = np.shape(res)[1]
         Np = 4
-        P = np.zeros(Nt, Np)
-        R = np.zeros(Nt,Nw)
+        P = np.zeros((Nt, Np))
+        R = np.zeros((Nt,Nw))
         
     for i, j in enumerate(frame_range):
-        P[j] = params[i]
+        P[j] = params[i][0]
         R[j] = res[i]
         
     np.savez(fname, P, R)

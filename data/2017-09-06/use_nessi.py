@@ -642,8 +642,8 @@ class SST_data():
                 self.zeros = self.calculate_zeros(frame=frame)
                 R = self.calculate_boundary(frame=frame) 
                 # print(R[::100, ::100])
-                # plt.imshow(R)
-                # plt.show()
+                plt.imshow(R)
+                plt.show()
                 self.boundary = R  if i==0 else R * self.boundary
                 print(f'calculated boundary at frame {frame}')
             print(f"calculated boundary over folowing frames {f_o_o}")
