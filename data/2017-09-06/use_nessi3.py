@@ -591,6 +591,8 @@ def official_start_flare(name, except_time=None):
     """
     if "23" in name:
         return "16:48:00"
+    elif "16" in name:
+        return "11:28:00"
     for yy in ['19','13''9u', "17a","17","15a","15","14a","14"]:
         if yy in name:
             print(f'Not official start flare defined for {name} falling back to first of TIME[0], the execpt_time {except_time}.')
@@ -865,14 +867,19 @@ class SST_data_from_multiple_fits_files():
             self._boundary_per_frame = False
 
         elif methode == 'search_overlap':
+            self._boundary_per_frame = True
+            self._zero_per_frame = True
             print("Use arguments as dictionary with 'frames_of_overlap' to define a list of considerd frames to calculate overlap")
             f_o_o = arguments.get('frames_of_overlap', range(0,self._number_of_frames, 100))
             for i,frame in enumerate(f_o_o):
                 self.zeros = self.calculate_zeros(frame=frame)
-                self.boundary = self.calculate_boundary(frame=frame)  if i==0 else self.calculate_boundary(frame=frame) * self.boundary
+                B = self.calculate_boundary(frame=frame)
+                self.boundary = B if i==0 else B * self.boundary
                 print(f'calculated boundary at frame {frame}')
+                plt.imshow(B)
+                plt.show()
             print(f"calculated boundary over folowing frames {f_o_o}")
-            
+            self._boundary_per_frame = False
         else:
             raise ValueError(f'The provided Boundary methode {methode} is not implemented! only "search", "No Boundary", "By_user" and "search_overlap"')
 

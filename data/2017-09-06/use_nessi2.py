@@ -347,7 +347,8 @@ def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar
         vmin = np.percentile(Z, 2)
         vmax = np.percentile(Z, 98)
     else:
-        vmin, vmax = vlim
+        vmin = 1-vlim
+        vmax = vlim+1
         
     if logscale:
             pcm = ax.pcolormesh(X, Y, Z, cmap=cmap, norm=colors.SymLogNorm(linthresh=0.03, linscale=0.03,
