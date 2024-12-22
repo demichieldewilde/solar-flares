@@ -243,7 +243,7 @@ def time_hark(time, arr2D, cad):
     
 def degenerate_contrast_as_Harps(name_of_line, data, quiet_sun_subtraction=True, area_factor=60**2/np.pi/959.63**2,
                                  normal=True, add_noise=False, scale_noise=1):
-    wav, contr, time, line, std = contrast_FD_data(name_of_line, data, quiet_sun_subtraction)
+    wav, contr, time, line, std = contrast_FD_data(name_of_line, data, quiet_sun_subtraction, area_factor=area_factor)
     # wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
 
     # line = interp1d(wav_nessi, dc_nessi)(wav)

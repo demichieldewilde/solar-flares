@@ -870,7 +870,7 @@ class SST_data_from_multiple_fits_files():
             self._boundary_per_frame = True
             self._zero_per_frame = True
             print("Use arguments as dictionary with 'frames_of_overlap' to define a list of considerd frames to calculate overlap")
-            f_o_o = arguments.get('frames_of_overlap', range(0,self._number_of_frames, 100))
+            f_o_o = arguments.get('frames_of_overlap', range(0,self._number_of_frames, self._number_of_frames//15))
             for i,frame in enumerate(f_o_o):
                 self.zeros = self.calculate_zeros(frame=frame)
                 B = self.calculate_boundary(frame=frame)
