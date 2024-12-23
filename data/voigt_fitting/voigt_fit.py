@@ -300,11 +300,11 @@ def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_poi
         
 def display_OK():
     ok = [
-        "  ____    _   __",
-        " / __ \  | | / /",
-        "| |  | | | |/ /",
-        "| |_ | | |   \\",
-        " \____/  |_|\_\\"
+        "  ____    _   __     ",
+        " / __ \  | | / /     ",
+        "| |  | | | |/ /      ",
+        "| |_ | | |   \\      ",
+        " \____/  |_|\_\\     "
     ]
     for line in ok:
         print(line * 5)  # Print 

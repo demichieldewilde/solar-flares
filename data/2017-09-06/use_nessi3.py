@@ -810,6 +810,7 @@ class SST_data_from_multiple_fits_files():
         # print(Total_intensity)
         frame_max = np.where(Total_intensity == np.max(Total_intensity))[0]
         print(f'The peak occurs at frame {frame_max} at time {[self.time_of_frame(i) for i in frame_max]}.')
+        print(f"The SST data runs from {self.time_of_frame(0)} to {self.time_of_frame(-1)}.")
 
         fig, ax = plt.subplots()
         ax.plot(Total_intensity)
