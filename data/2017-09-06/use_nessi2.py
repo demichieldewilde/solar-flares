@@ -110,17 +110,25 @@ def most_quiet_flare_time(name):
         return [-90, -75]
     elif "14" in name:
         return [4.5,6]
+    elif "23a" in name:
+        raise NameError(f'WRONG NAME: the line {name} had no most quiet flare time defined.')
     elif "23" in name:
         return [55,60]
+    elif "16" in name:
+        return [50, 60]
     else:
         raise NameError(f'WRONG NAME: the line {name} had no most quiet flare time defined.')
 
 def most_quiet_frames(name_of_line, time):
     T = most_quiet_flare_time(name_of_line)
+    assert(T[0] > time[0])
+    assert(T[1]< time[-1])
     return np.where(time >= T[0], 1,0) * np.where( time <= T[1], 1, 0)
     
 def most_quiet_FD_spectr(FD_spec, name_of_line, time):
     R = most_quiet_frames(name_of_line, time)
+    print(np.shape(R), np.shape(FD_spec))
+    print(R)
     return np.average(FD_spec, axis=0, weights=R)
     
 def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False): 
@@ -128,7 +136,7 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,ar
     saas = line
     
     FD = DFD + line
-    
+    print(np.shape(time))
     mq_FD = most_quiet_FD_spectr(FD, name_of_line, time)
     
     contr_prof = FD / mq_FD

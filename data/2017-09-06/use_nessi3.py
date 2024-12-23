@@ -589,10 +589,14 @@ def official_start_flare(name, except_time=None):
     Returns:
         [t0, t1]: begin and end time of the quiet flare time
     """
-    if "23" in name:
+    if "23a" in name:
+        return 
+    elif "23" in name:
         return "16:48:00"
     elif "16" in name:
         return "11:28:00"
+    elif "21" in name:
+        return "09:46:00"
     for yy in ['19','13''9u', "17a","17","15a","15","14a","14"]:
         if yy in name:
             print(f'Not official start flare defined for {name} falling back to first of TIME[0], the execpt_time {except_time}.')
@@ -639,6 +643,7 @@ class SST_data_from_multiple_fits_files():
         print(f"the wavelengths are {self._wavel = }")
         # Time file
         self._time = time
+        assert(len(time) == self.shape[0])
         # cont_point is the index of the point in the continuum to exculde this in plots (will be mostly -1)
         if cont_point is not None:
             self.define_cont_point(cont_point)
@@ -870,7 +875,7 @@ class SST_data_from_multiple_fits_files():
             self._boundary_per_frame = True
             self._zero_per_frame = True
             print("Use arguments as dictionary with 'frames_of_overlap' to define a list of considerd frames to calculate overlap")
-            f_o_o = arguments.get('frames_of_overlap', range(0,self._number_of_frames, self._number_of_frames//15))
+            f_o_o = arguments.get('frames_of_overlap', range(0,self._number_of_frames, self._number_of_frames//8))
             for i,frame in enumerate(f_o_o):
                 self.zeros = self.calculate_zeros(frame=frame)
                 B = self.calculate_boundary(frame=frame)

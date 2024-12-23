@@ -574,6 +574,7 @@ class SST_data():
         # print(Total_intensity)
         frame_max = np.where(Total_intensity == np.max(Total_intensity))[0]
         print(f'The peak occurs at frame {frame_max} at time {self.time_of_frame(frame_max)}.')
+        print(f"The SST data runs from {self.time_of_frame(0)} to {self.time_of_frame(-1)}.")
 
         fig, ax = plt.subplots()
         ax.plot(Total_intensity)
@@ -1965,7 +1966,7 @@ def correct_flare_start(time, name):
         Dt =  -60+27-50 # 16:50/17:22/17:09 15:27/17:27
     elif "14" in name:
         Dt = 4 #   2014-06-10 & SPoCA 13052 & X1.5& 12:36/12:52/13:03 &12:40/12:58&100\% & (-879'', -305'') & 0.139& \Halpha & 4.0\\ 
-    elif "23" in name: # from flare 2023 onwards this is been corrected in advance!
+    elif any([i in name for i in ['23', '16', '21']]) : #"23" in name or "16" in name or "21" name: # from flare 2023 onwards this is been corrected in advance!
         Dt = 0      
     else:
         raise ValueError(f'No start time defined for given name {name}')
@@ -1991,7 +1992,9 @@ def get_full_path(name):
     elif "14" in name:
         return "E:\solar flares\data\\2014-06-10"
     elif "23" in name:
-        return "E:\solar flares\data\\2023-06-09"
+        return "E:\solar flares\data\\2023-06-09"    
+    elif "16" in name:
+        return "E:\solar flares\data\\2016-05-14"
     else:
         raise FileNotFoundError(f'For the profided name {name} no full path was defined.')
 
