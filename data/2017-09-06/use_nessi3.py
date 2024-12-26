@@ -590,7 +590,7 @@ def official_start_flare(name, except_time=None):
         [t0, t1]: begin and end time of the quiet flare time
     """
     if "23a" in name:
-        return 
+        return "09:30:00"
     elif "23" in name:
         return "16:48:00"
     elif "16" in name:
