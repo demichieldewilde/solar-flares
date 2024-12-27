@@ -593,6 +593,8 @@ def official_start_flare(name, except_time=None):
         return "09:30:00"
     elif "23" in name:
         return "16:48:00"
+    elif "22" in name:
+        return "07:35:00"
     elif "16" in name:
         return "11:28:00"
     elif "21" in name:
@@ -730,13 +732,13 @@ class SST_data_from_multiple_fits_files():
     def ccp_frame(self, frame, Show=True):
         # Now view a datacube
         self.current_frame=frame
-        cube = np.nan_to_num(self.datacube(frame).copy())
+        cube = np.nan_to_num(self.datacube(frame))
         cube[np.where(cube > self._thresh[1])] =self._thresh[1]
         cube[np.where(cube <self._thresh[0])] =self._thresh[0]
         tstr = self.time_of_frame(frame)
         if Show:
             print("COCOPLOT at ", tstr, "(frame number", frame,")")
-        self.current_ccp = cp.plot(cube.copy(),self._filt, show=Show)
+        self.current_ccp = cp.plot(cube,self._filt, show=Show)
         # return self.current_ccp
 
     # frame is an integer, the frame number
