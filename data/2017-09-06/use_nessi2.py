@@ -20,6 +20,9 @@ def element_from_name(name):
     for line in lines:
         if line in name:
             return "CaIR" if line=="CaI" else line
+    if "Fe" in name:
+        print(f"Assuming that {name} is spectral line Fe6173.")
+        return "Fe6173"
     raise ValueError(f'The given name {name} is not known as a spectral name (yet).')
 
 def disgard_cont_point(name, data):
@@ -116,27 +119,38 @@ def most_quiet_flare_time(name):
         return [55,60]
     elif "16" in name:
         return [30, 35]
+    elif "21" in name:
+        return [25, 30]
     else:
         raise NameError(f'WRONG NAME: the line {name} had no most quiet flare time defined.')
 
 def most_quiet_frames(name_of_line, time):
     T = most_quiet_flare_time(name_of_line)
-    assert(T[0] > time[0])
-    assert(T[1]< time[-1])
+    assert(T[-1] > time[0])
+    assert(T[0]< time[-1])
     return np.where(time >= T[0], 1,0) * np.where( time <= T[1], 1, 0)
     
 def most_quiet_FD_spectr(FD_spec, name_of_line, time):
     R = most_quiet_frames(name_of_line, time)
     return np.average(FD_spec, axis=0, weights=R)
     
-def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False): 
+def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False, theoretical=False): 
     wav, DFD, time, line, std = difference_FD_data(name_of_line, data, quiet_sun_subtraction, num, area_factor, add_noise)
     saas = line
     
     FD = DFD + line
-    mq_FD = most_quiet_FD_spectr(FD, name_of_line, time)
+    if theoretical:
+        mq_FD = line
+    else:
+        mq_FD = most_quiet_FD_spectr(FD, name_of_line, time)
+        
+    plt.plot(wav, line, label="NESSI")
+    plt.plot(wav, most_quiet_FD_spectr(FD, name_of_line, time), label="Most quiet FD")
+    plt.legend()
+    plt.show()
     
     contr_prof = FD / mq_FD
+    
     
     return wav, contr_prof, time, line, (std/mq_FD**0.5 if std is not None else None)
 

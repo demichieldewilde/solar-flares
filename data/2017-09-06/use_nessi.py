@@ -1991,10 +1991,18 @@ def get_full_path(name):
         return "E:\solar flares\data\\2014-09-06"
     elif "14" in name:
         return "E:\solar flares\data\\2014-06-10"
+    elif "23a" in name:
+        return "E:\solar flares\data\\2023-06-18"
     elif "23" in name:
         return "E:\solar flares\data\\2023-06-09"    
     elif "16" in name:
         return "E:\solar flares\data\\2016-05-14"
+    elif "21" in name:
+        return "E:\solar flares\data\\2021-05-26"
+    elif "22" in name:
+        return "E:\solar flares\data\\2022-05-20"
+    elif "24" in name:
+        return "E:\solar flares\data\\2024-06-03"
     else:
         raise FileNotFoundError(f'For the profided name {name} no full path was defined.')
 
