@@ -6,11 +6,8 @@
 
 ### To Download
 
-1) https://dubshen.astro.su.se/sst_archive/observations/281 (small C flare near the disk center)
 
 
-
-4) https://dubshen.astro.su.se/sst_archive/observations/372 (Mflare near disk center, useful for our spread!) It's open source, but belongs to Lucia so would need new authors. I don't mind but Carsten does not like her. 
 
 5) Tine's flare in He (jn cloud) its just 15 frames but its a nice one. 
 
@@ -18,19 +15,25 @@
 
 ### To Do FOV Calculation
 
-
-2) https://dubshen.astro.su.se/sst_archive/observations/397
-https://dubshen.astro.su.se/sst_archive/observations/398
-(Small B flare but very pretty!) This is the other flare that Julius gave us.
 ### To Do Voight Fitting
 
+
+### To Do Full analysis plot
+
+1)2021-05-26 https://dubshen.astro.su.se/sst_archive/observations/281 (small C flare near the disk center)
+
+2) 2023-06-18 https://dubshen.astro.su.se/sst_archive/observations/397
+https://dubshen.astro.su.se/sst_archive/observations/398
+(Small B flare but very pretty!) This is the other flare that Julius gave us.
 
 3) 2016-05-14 the older flare that Julius gave us, i think that I sent it to you a while ago but I don't see it in the list. It is on the cloud as a fits, maybe you just didn't upload it? 
 
     -> Ha: give positino
     -> CaIR: Give position
 
-### To Do Full analysis plot
+
+4) 2022-05-20 https://dubshen.astro.su.se/sst_archive/observations/372 (Mflare near disk center, useful for our spread!) It's open source, but belongs to Lucia so would need new authors. I don't mind but Carsten does not like her. 
+
 
 ### To Do paper filling in
 

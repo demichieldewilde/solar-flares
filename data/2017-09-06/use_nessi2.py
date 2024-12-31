@@ -114,13 +114,15 @@ def most_quiet_flare_time(name):
     elif "14" in name:
         return [4.5,6]
     elif "23a" in name:
-        raise NameError(f'WRONG NAME: the line {name} had no most quiet flare time defined.')
+        return [10,13]
     elif "23" in name:
         return [55,60]
     elif "16" in name:
         return [30, 35]
     elif "21" in name:
         return [25, 30]
+    elif "22" in name:
+        return [55,65]
     else:
         raise NameError(f'WRONG NAME: the line {name} had no most quiet flare time defined.')
 
@@ -143,11 +145,15 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,ar
         mq_FD = line
     else:
         mq_FD = most_quiet_FD_spectr(FD, name_of_line, time)
-        
-    plt.plot(wav, line, label="NESSI")
-    plt.plot(wav, most_quiet_FD_spectr(FD, name_of_line, time), label="Most quiet FD")
-    plt.legend()
-    plt.show()
+    
+    # plt.plot(wav, line, label="NESSI")
+    # plt.plot(wav, most_quiet_FD_spectr(FD, name_of_line, time), '--', label="Most quiet FD")
+    # plt.legend()
+    # plt.show()
+    
+    # plt.plot(wav, most_quiet_FD_spectr(FD, name_of_line, time) - line, '--', label="Difference")
+    # plt.legend()
+    # plt.show()
     
     contr_prof = FD / mq_FD
     
