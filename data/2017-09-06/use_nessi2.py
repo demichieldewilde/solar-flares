@@ -160,6 +160,11 @@ def contrast_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,ar
     
     return wav, contr_prof, time, line, (std/mq_FD**0.5 if std is not None else None)
 
+def normalized_spectral_change(name_of_line, data, quiet_sun_subtraction=False, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False, theoretical=False): 
+    wav, DFD, time, line, std = difference_FD_data(name_of_line, data, quiet_sun_subtraction, num, area_factor, add_noise)
+    DS = DFD / line if theoretical else DFD / most_quiet_FD_spectr(line + DFD, name_of_line, time)
+    return wav, DS, time, line, std/line
+
 def difference_FD_data(name_of_line, data, quiet_sun_subtraction=False, num=100,area_factor=60**2/np.pi/959.63**2, add_noise=False):            
     wav, DFOV, time, line, std = difference_FOV_data(name_of_line, data, quiet_sun_subtraction, num)
 
