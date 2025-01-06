@@ -13,6 +13,9 @@
 
 6)  https://dubshen.astro.su.se/sst_archive/observations/571 Secret SST m-flare whic we need permission for, but its super pretty and near the disk center. 
 
+7) 2015-05-05 is on the cloud, the other 2 i have to download and add
+
+
 ### To Do FOV Calculation
 
 ### To Do Voight Fitting
