@@ -1705,7 +1705,7 @@ def multiline(xs, ys, c, ax=None, **kwargs):
     return lc
 
 def hulp_time(string):
-    return float(string[:2])*60 + float(string[3:5]) + float(string[6:8])/60
+    return float(string[:2])*60 + float(string[3:5]) + (float(string[6:8])/60 if len(string)>=8 else 0 )
 
 def time_hulp(float_val):
     hours, minutes = divmod(int(float_val), 60)
