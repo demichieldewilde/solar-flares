@@ -1958,6 +1958,8 @@ def correct_flare_start(time, name):
         Dt = 25+7+24/60 # 16:25:24 - 15:53
     elif "17" in name:
         Dt = 3 #
+    elif "15b" in name:
+        Dt=0
     elif "15a" in name:
         Dt = 14 # 2015-09-27T10:34 - 10:20
     elif "15" in name:
@@ -1987,6 +1989,8 @@ def get_full_path(name):
         return "E:\solar flares\data\\2013-06-30"
     elif "15a" in name:
         return "E:\solar flares\data\\2015-09-27" 
+    elif "15b" in name:
+        return "E:\solar flares\data\\2015-05-05" 
     elif "15" in name:
         return "E:\solar flares\data\\2015-06-24" 
     elif "14a" in name:

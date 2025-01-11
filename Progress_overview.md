@@ -25,11 +25,6 @@
 
 
 
-3) 2016-05-14 the older flare that Julius gave us, i think that I sent it to you a while ago but I don't see it in the list. It is on the cloud as a fits, maybe you just didn't upload it? 
-
-    -> Ha: give positino
-    -> CaIR: Give position
-
 
 4) 2022-05-20 https://dubshen.astro.su.se/sst_archive/observations/372 (Mflare near disk center, useful for our spread!) It's open source, but belongs to Lucia so would need new authors. I don't mind but Carsten does not like her. 
 
@@ -43,6 +38,10 @@ https://dubshen.astro.su.se/sst_archive/observations/398
 (Small B flare but very pretty!) This is the other flare that Julius gave us.
 
 
+3) 2016-05-14 the older flare that Julius gave us, i think that I sent it to you a while ago but I don't see it in the list. It is on the cloud as a fits, maybe you just didn't upload it? 
+
+    -> Ha: give positino
+    -> CaIR: Give position
 
 ## To Do's (other)
 

@@ -105,6 +105,8 @@ def most_quiet_flare_time(name):
         return [100,110]
     elif "17" in name:
         return [43,50]
+    elif "15b" in name:
+        return [5,10]    
     elif "15a" in name:
         return [35,40]
     elif "15" in name:
@@ -128,8 +130,14 @@ def most_quiet_flare_time(name):
 
 def most_quiet_frames(name_of_line, time):
     T = most_quiet_flare_time(name_of_line)
-    assert(T[-1] > time[0])
-    assert(T[0]< time[-1])
+    try:
+        assert(T[-1] > time[0])
+        assert(T[0]< time[-1])
+    except AssertionError as e:
+        print("ERROR Wrong quiet times")
+        print("time is ", time)
+        print("quiet frames are ", T)
+        raise(e)
     return np.where(time >= T[0], 1,0) * np.where( time <= T[1], 1, 0)
     
 def most_quiet_FD_spectr(FD_spec, name_of_line, time):

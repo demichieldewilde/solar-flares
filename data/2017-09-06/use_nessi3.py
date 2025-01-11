@@ -599,6 +599,8 @@ def official_start_flare(name, except_time=None):
         return "11:28:00"
     elif "21" in name:
         return "09:46:00"
+    elif "21" in name:
+        return "11:55:00"
     for yy in ['19','13''9u', "17a","17","15a","15","14a","14"]:
         if yy in name:
             print(f'Not official start flare defined for {name} falling back to first of TIME[0], the execpt_time {except_time}.')
@@ -1883,6 +1885,8 @@ def multiline(xs, ys, c, ax=None, **kwargs):
     return lc
 
 def hulp_time(string):
+    if len(string) < 6:
+        string = string + '00000000000'
     return float(string[:2])*60 + float(string[3:5]) + float(string[6:8])/60
 
 def time_to_minutes(_time):
