@@ -593,6 +593,8 @@ def official_start_flare(name, except_time=None):
         return "09:30:00"
     elif "23" in name:
         return "16:48:00"
+    elif "15b" in name:
+        return "11:55:00"
     elif "22" in name:
         return "07:35:00"
     elif "16" in name:
