@@ -296,9 +296,9 @@ def degenerate_contrast_as_Harps(name_of_line, data, quiet_sun_subtraction=True,
     return wav, smooth(contr), time, line, (std if add_noise else None)
     
 def get_Harps(name_of_line):
-    # Harps starts at 8:57 and and at 14:33 UT
+    # Harps starts at 8:57 and end at 14:33 UT
     # first flare starts exactly at 8:57 (X2.2) the second at 11:53 (X9.3)
-    folder = "E:/solar flares/data/2017-09-06\Harps/"
+    folder = "E:/solar flares/data/2017-09-06/Harps/"
     flare = np.load(f'{folder}Flux_corrected.npy')
 
     wav = np.load(f'{folder}Wavelength.npy')
@@ -306,8 +306,10 @@ def get_Harps(name_of_line):
     timeavg = np.median(flare[10:30], axis=0)
 
     flarerange = (flare[:63] / timeavg) - 1
-    cadence =  5 # Harps cadence in minutes
-    time = np.arange(np.shape(flarerange)[0]) * cadence
+    n = np.shape(flare)[0]
+    cadence = 5#((3+33)+5*60) / (n-1) # Harps cadence in minutes
+    time = np.arange(n) * cadence
+    print(time[0], time[-1], cadence, (3+33)+5*60)
 
     line = 6563
 
