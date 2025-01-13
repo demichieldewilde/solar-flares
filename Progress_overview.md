@@ -26,9 +26,6 @@
 
 
 
-4) 2022-05-20 https://dubshen.astro.su.se/sst_archive/observations/372 (Mflare near disk center, useful for our spread!) It's open source, but belongs to Lucia so would need new authors. I don't mind but Carsten does not like her. 
-
-
 ### To Do paper filling in
 
 1)2021-05-26 https://dubshen.astro.su.se/sst_archive/observations/281 (small C flare near the disk center)
@@ -42,6 +39,9 @@ https://dubshen.astro.su.se/sst_archive/observations/398
 
     -> Ha: give positino
     -> CaIR: Give position
+
+
+4) 2022-05-20 https://dubshen.astro.su.se/sst_archive/observations/372 (Mflare near disk center, useful for our spread!) It's open source, but belongs to Lucia so would need new authors. I don't mind but Carsten does not like her. 
 
 ## To Do's (other)
 
