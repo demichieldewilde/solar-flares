@@ -295,24 +295,28 @@ def get_Harps(name_of_line):
     # Harps starts at 8:57 and end at 14:33 UT
     # first flare starts exactly at 8:57 (X2.2) the second at 11:53 (X9.3)
     folder = "E:/solar flares/data/2017-09-06/Harps/"
-    flare = np.load(f'{folder}Flux_corrected.npy')
+    flare = np.load(f'{folder}Flux_corrected.npy')[:63]
 
     wav = np.load(f'{folder}Wavelength.npy')
 
-    n = np.shape(flare)[0]
-    cadence = 4.38 #5 * 174/210 # ((3+33)+5*60) / (n-1) # Harps cadence in minutes
-    time = np.arange(n) * cadence
-    print(time[0], time[-1], cadence, (3+33)+5*60)
+    summary = np.loadtxt('E:\solar flares\data\\2017-09-06\Harps\dates.txt', dtype=str) 
+    time = np.array([un.hulp_time(t[11:123]) for t in summary])
+
+    quiet_min = [43,58]
     
     if '9u' in name_of_line :
         quiet_min = [50, 55]
+        time -= un.hulp_time("08:57:00")
+
     else:
-        quiet_min = [50,60]
-        time -= 174
+        quiet_min = [43,55]
+        time -= un.hulp_time("11:53:00")
     
     quiet_indeces = [np.where(time>= quiet_min[0])[0][0], np.where(time>= quiet_min[1])[0][0]]
+    assert(quiet_indeces[0] < quiet_indeces[1])
 
     timeavg = np.median(flare[quiet_indeces[0]:quiet_indeces[1]], axis=0)
+    timeavg = np.median(flare[10:30], axis=0)
     
     if '9u' in name_of_line :
         time = time[:5]  
@@ -343,7 +347,7 @@ def get_Harps(name_of_line):
     else:
         print(f"Line could not be determined. only Ha, CaK and CaH possible. Got {name_of_line}.")
         return None, None, None
-    
+
     return smooth(flare_win), wav_win, time
 
 
@@ -368,6 +372,8 @@ def create_gaussian_kernel(n, m, sigma):
 from scipy.signal import savgol_filter
 
 def smooth(data):
+    if np.any(np.isnan(data)):
+        raise ValueError("Data contains NaN. This is incompatible with the filter!")
     windowlength = min(101, np.shape(data)[1]//10)
     return savgol_filter(data, windowlength, 3)
 

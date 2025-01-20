@@ -9,7 +9,7 @@
 
 
 
-5) Tine's flare in He (jn cloud) its just 15 frames but its a nice one. 
+5) 
 
 6)  https://dubshen.astro.su.se/sst_archive/observations/571 Secret SST m-flare whic we need permission for, but its super pretty and near the disk center. 
 
@@ -22,7 +22,6 @@
 ### To Do Full analysis plot
 
 
-7) 2015-05-05 is on the cloud, the other 2 i have to download and add
 
 
 
@@ -43,6 +42,7 @@ https://dubshen.astro.su.se/sst_archive/observations/398
 
 4) 2022-05-20 https://dubshen.astro.su.se/sst_archive/observations/372 (Mflare near disk center, useful for our spread!) It's open source, but belongs to Lucia so would need new authors. I don't mind but Carsten does not like her. 
 
+7) 2015-05-05 is on the cloud, the other 2 i have to download and add (Tine's flare in He (jn cloud) its just 15 frames but its a nice one. )
 ## To Do's (other)
 
 Priority list
