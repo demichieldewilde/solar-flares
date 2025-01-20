@@ -282,12 +282,8 @@ def time_hark(time, arr2D, cad):
 def degenerate_contrast_as_Harps(name_of_line, data, quiet_sun_subtraction=True, area_factor=60**2/np.pi/959.63**2,
                                  normal=True, add_noise=False, scale_noise=1):
     wav, contr, time, line, std = contrast_FD_data(name_of_line, data, quiet_sun_subtraction, area_factor=area_factor)
-    # wav_nessi, dc_nessi, clv_nessi = data[f"nessi_{name_of_line}"]
-
-    # line = interp1d(wav_nessi, dc_nessi)(wav)
-    # DFD = area_factor * DFOV 
     
-    time, contr = time_hark(time, contr, cad=5)
+    time, contr = time_hark(time, contr, cad=4.5)
     
     if add_noise:
         noise = noise_alike_harps(name_of_line, contr.shape, backup=std[0], scale_noise=scale_noise)
@@ -303,15 +299,29 @@ def get_Harps(name_of_line):
 
     wav = np.load(f'{folder}Wavelength.npy')
 
-    timeavg = np.median(flare[10:30], axis=0)
-
-    flarerange = (flare[:63] / timeavg) - 1
     n = np.shape(flare)[0]
-    cadence = 5#((3+33)+5*60) / (n-1) # Harps cadence in minutes
+    cadence = 4.38 #5 * 174/210 # ((3+33)+5*60) / (n-1) # Harps cadence in minutes
     time = np.arange(n) * cadence
     print(time[0], time[-1], cadence, (3+33)+5*60)
+    
+    if '9u' in name_of_line :
+        quiet_min = [50, 55]
+    else:
+        quiet_min = [50,60]
+        time -= 174
+    
+    quiet_indeces = [np.where(time>= quiet_min[0])[0][0], np.where(time>= quiet_min[1])[0][0]]
 
-    line = 6563
+    timeavg = np.median(flare[quiet_indeces[0]:quiet_indeces[1]], axis=0)
+    
+    if '9u' in name_of_line :
+        time = time[:5]  
+        flarerange = flare[:5]
+    else:
+        time = time[30:63] 
+        flarerange = flare[30:63]
+        
+    flarerange = (flarerange/timeavg) 
 
     if 'Ha' in name_of_line : 
         #Pick out window
@@ -331,11 +341,9 @@ def get_Harps(name_of_line):
         flare_win = flarerange[:,6300:7300]
         wav_win = wav[6300:7300]
     else:
-        print(f"Line could not be detirmend. only Ha, CaK and CaH possible. Got {name_of_line}.")
+        print(f"Line could not be determined. only Ha, CaK and CaH possible. Got {name_of_line}.")
         return None, None, None
-
-    flare_win = flare_win[:5] if '9u' in name_of_line else flare_win[30:]
-    time = time[:5] if '9u' in name_of_line else time[30:63]- (11*60+53) + (8*60+57)
+    
     return smooth(flare_win), wav_win, time
 
 
