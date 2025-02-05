@@ -599,10 +599,10 @@ def official_start_flare(name, except_time=None):
         return "07:35:00"
     elif "16" in name:
         return "11:28:00"
+    elif "21a" in name:
+        return "15:17:00"   
     elif "21" in name:
         return "09:46:00"
-    elif "21" in name:
-        return "11:55:00"
     for yy in ['19','13''9u', "17a","17","15a","15","14a","14"]:
         if yy in name:
             print(f'Not official start flare defined for {name} falling back to first of TIME[0], the execpt_time {except_time}.')

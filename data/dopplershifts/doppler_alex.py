@@ -66,7 +66,7 @@ def idopplerc8(doppler_shifts):
 
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.colors as mpl
+import matplotlib as mpl
 
 
 

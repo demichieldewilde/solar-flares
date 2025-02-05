@@ -2003,6 +2003,8 @@ def get_full_path(name):
         return "E:\solar flares\data\\2023-06-09"    
     elif "16" in name:
         return "E:\solar flares\data\\2016-05-14"
+    elif "21a" in name:
+        return "E:\solar flares\data\\2021-10-28"
     elif "21" in name:
         return "E:\solar flares\data\\2021-05-26"
     elif "22" in name:
