@@ -2053,11 +2053,12 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
     fps = 6
     nSeconds = 5
     theta = sst_data.theta_nessi_to_quiet_sun
+    print(theta)
     theta[1] = theta[2]
     
     if theor_line is None:
-        theor_line = fake_theor_line(sst_data._wavel, sst_data.quiet_spect, sst_data.atlas_saas_profile / theta[2])
-        theta = [0,0,1]
+        theor_line = fake_theor_line(sst_data._wavel , sst_data.quiet_spect, sst_data.atlas_saas_profile / theta[2])
+        theta = [0, 1, 1]
 
     f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav , theta[1] * theor_line.spectr_qs 
                                     , kind='linear', fill_value="extrapolate")
@@ -2066,11 +2067,9 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
     f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav , theta[1] * theor_line.saas_profile 
                                     , kind='linear', fill_value="extrapolate")
 
-
     wav = merge_wavelengths(sst_data._wavel - theta[0], theor_line.sst_wav)
     if "CaK" in name_of_line:
         wav = wav[:-1]
-
 
 
     limit = derive_intensity_lim(sst_data, 
@@ -2117,7 +2116,7 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
 
 
 
-    fig, line_sst, im, text, = frame_visualization(sst_data, frame, sst_data.theta_nessi_to_quiet_sun)
+    fig, line_sst, im, text, = frame_visualization(sst_data, frame, theta)
 
     # animation function.  This is called sequentially
     def animate(i):
