@@ -1955,7 +1955,7 @@ def correct_flare_start(time, name):
     elif '9u' in name:
         Dt = 7 #
     elif "17a" in name:
-        Dt = 25+7+24/60 # 16:25:24 - 15:53
+        Dt = hulp_time("16:25:24") - hulp_time("15:35:00")
     elif "17" in name:
         Dt = 3 #
     elif "15b" in name:
