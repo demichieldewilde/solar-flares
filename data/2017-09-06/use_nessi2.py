@@ -398,7 +398,7 @@ def smooth2(data, n_wav=500, n_time=1, mode='same'):
     return convolve2d(data, kernel, mode=mode)
 
 def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar=True, vlim=None, 
-                    vlimscale=1, logscale=False, xlim=None, cmap='RdBu_r'):
+                    vlimscale=1, logscale=False, xlim=None, cmap='RdBu_r', lambda_0=None):
     if vlim is None:   
         vmin = np.percentile(Z, 2)
         vmax = np.percentile(Z, 98)
@@ -419,7 +419,7 @@ def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar
         # colorbar.set_label('Z-Values')  # Replace with your desired label
 
     if 'title' in decorations:
-        ax.set_title(decorations['title'])
+        ax.set_title(decorations['title'], y=1.10)
     if "ylabel" in decorations:
         ax.set_ylabel(decorations['ylabel'])
     if "xlabel" in decorations:
@@ -434,9 +434,18 @@ def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar
     # ax2.set_ylabel('Intensity []', color=color)  # we already handled the x-label with ax1
     ax2.plot(x,line, color=color)
     ax2.tick_params(axis='y', labelcolor=color)
+    ax2a = ax2.secondary_xaxis('top', functions=(wav_2_doppler(lambda_0), doppler_2_wav(lambda_0)))
+    # ax2a.set_xticks([-50,0,50])
 
     return pcm
 
+def wav_2_doppler(lambda_0):
+    c = 299792.458 # speed of light in km/s
+    return lambda wavelengths :  c * ((wavelengths-lambda_0) / lambda_0) # Correct Doppler formula
+
+def doppler_2_wav(lambda_0):
+    c = 299792.458 # speed of light in km/s
+    return lambda doppler_shifts : ((doppler_shifts * lambda_0) / c) + lambda_0
 
 def acx_coord(ax, row, col):
     return ax[row+col] if ax.ndim == 1 else ax[row, col]
