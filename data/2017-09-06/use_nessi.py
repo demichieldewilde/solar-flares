@@ -2395,3 +2395,4 @@ def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wav
     print('saving the animation. Now calculating frame:')
     anim.save(filename, fps=fps)
     
+
