@@ -414,7 +414,7 @@ def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar
 
     if seperate_colorbar:
         # print('X', X, 'Y', Y, 'Z', Z)
-        fig.colorbar(pcm, ax=ax, extend='both')
+        cb = fig.colorbar(pcm, ax=ax, extend='both', format='%.0e')
         # colorbar = plt.colorbar(pcm, label=f'$\Delta I / \sigma$ []')
         # colorbar.set_label('Z-Values')  # Replace with your desired label
 
@@ -433,9 +433,8 @@ def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar
     color = decorations['color'] if 'color' in decorations else 'black'
     # ax2.set_ylabel('Intensity []', color=color)  # we already handled the x-label with ax1
     ax2.plot(x,line, color=color)
-    ax2.tick_params(axis='y', labelcolor=color)
-    ax2a = ax2.secondary_xaxis('top', functions=(wav_2_doppler(lambda_0), doppler_2_wav(lambda_0)))
-    # ax2a.set_xticks([-50,0,50])
+    ax2.tick_params(axis='y', left=False, right=False, which="both", labelright=False)
+    ax3 = ax.secondary_xaxis('top', functions=(wav_2_doppler(lambda_0), doppler_2_wav(lambda_0)))
 
     return pcm
 
