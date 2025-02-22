@@ -413,11 +413,9 @@ def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar
         pcm = ax.pcolormesh(X, Y, Z, cmap=cmap,vmin=vmin, vmax=vmax, shading='auto', label=f'$\Delta I / \sigma$ []')
 
     if seperate_colorbar:
-        import matplotlib.ticker                         # here's where the formatter is
-        cbformat = matplotlib.ticker.ScalarFormatter()   # create the formatter
-        cbformat.set_powerlimits((0,0))
-        # print('X', X, 'Y', Y, 'Z', Z)
-        cb = fig.colorbar(pcm, ax=ax, extend='both', format=cbformat)
+        cb = fig.colorbar(pcm, ax=ax, extend='both')#, format=cbformat)
+        cb.ax.yaxis.set_offset_position('left')  
+
         # colorbar = plt.colorbar(pcm, label=f'$\Delta I / \sigma$ []')
         # colorbar.set_label('Z-Values')  # Replace with your desired label
 
