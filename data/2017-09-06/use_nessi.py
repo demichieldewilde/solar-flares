@@ -1979,12 +1979,11 @@ def correct_flare_start(time, name):
 def get_full_path(name):
     if isinstance(name, list) and len(name) > 0 and isinstance(name[0], str):
         name = name[0]
-    if '17a' in name:
-        return "E:/solar flares/data/2017-09-10" 
-    elif '17' in name:
-        return "E:/solar flares/data/2017-09-06" 
-    elif '19' in name:
+        
+    if '19' in name:
         return "E:\solar flares\data\\2019-05-06"
+    elif '17a' in name:
+        return "E:/solar flares/data/2017-09-10" 
     elif "13" in name:
         return "E:\solar flares\data\\2013-06-30"
     elif "15a" in name:
@@ -2011,6 +2010,8 @@ def get_full_path(name):
         return "E:\solar flares\data\\2022-05-20"
     elif "24" in name:
         return "E:\solar flares\data\\2024-06-03"
+    elif '17' in name:
+        return "E:/solar flares/data/2017-09-06" 
     else:
         raise FileNotFoundError(f'For the profided name {name} no full path was defined.')
 
