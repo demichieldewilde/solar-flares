@@ -595,6 +595,8 @@ def official_start_flare(name, except_time=None):
         return "16:48:00"
     elif "15b" in name:
         return "11:55:00"
+    elif "24a" in name:
+        return "12:27:00"
     elif "22" in name:
         return "07:35:00"
     elif "16" in name:
@@ -618,6 +620,8 @@ class SST_data_from_multiple_fits_files():
     def __init__(self, timeframe_to_filename_fits, spectfilename, number_of_frames, time, name_of_line,
                  thresh=[1e-10,2e-7], boundary_methode='search', alternative_datacube=None,
                  boundary_arguments=None, cont_point=None, with_stokes=False, with_time=False, shape=None):
+        if alternative_datacube is not None:
+            self.alternative_datacube = alternative_datacube
         self.with_stokes = with_stokes
         self.with_time = with_time
         self.ttff = timeframe_to_filename_fits
@@ -634,8 +638,7 @@ class SST_data_from_multiple_fits_files():
             self.shape = (number_of_frames, 1 , s[-3], s[-2], s[-1]) if not with_stokes else (number_of_frames, '??' , s[0], s[1], s[2])
         print(f"the shape of the data is {self.shape}")
         
-        if alternative_datacube is not None:
-            self.alternative_datacube = alternative_datacube
+        
         # spectral positions 
         if spectfilename == 'use_solarnet':
             self._wavel = solarnet.get_wav(self.filename)
