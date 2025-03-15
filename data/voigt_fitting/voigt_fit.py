@@ -280,7 +280,7 @@ def make_analysis(name, data, initial_guess, plot_rate=50, offset=0, neglect_poi
     print(f'The average is {np.average(contr)}')
     
     if frame_range is not None:
-        frame_range = [i for i in frame_range if i < len(time)]
+        frame_range = [i for i in range(frame_range[0], frame_range[1]) if i < len(time)]
     else:
         frame_range = range(len(time))
     quiet_frames = np.where(un2.most_quiet_frames(name, time))[0]
