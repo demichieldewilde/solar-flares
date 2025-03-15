@@ -1897,6 +1897,7 @@ def save_for_further_analysis(sst_data, theor_line):
         np.save(filename, np.array([sst_data._wavel, sst_data.quiet_spect, sst_data.atlas_saas_profile/sst_data.theta_nessi_to_quiet_sun[2]]))
     # save time in minutes
     if not hasattr(sst_data, "TIME"):
+        print("Had to calculate TIME again!")
         get_TIME(sst_data)
     filename = get_file_path_line_data(f"TIME_{sst_data.name_of_line}")
     np.save(filename,sst_data.TIME)
@@ -1970,7 +1971,7 @@ def correct_flare_start(time, name):
         Dt = 4 #   2014-06-10 & SPoCA 13052 & X1.5& 12:36/12:52/13:03 &12:40/12:58&100\% & (-879'', -305'') & 0.139& \Halpha & 4.0\\ 
     elif "23a" in name:
         Dt = -1
-    elif any([i in name for i in ['23', '16', '21', "22"]]) : #"23" in name or "16" in name or "21" name: # from flare 2023 onwards this is been corrected in advance!
+    elif any([i in name for i in ['23', '16', '21', "22", '24']]) : #"23" in name or "16" in name or "21" name: # from flare 2023 onwards this is been corrected in advance!
         Dt = 0      
     else:
         raise ValueError(f'No start time defined for given name {name}')

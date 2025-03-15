@@ -126,9 +126,9 @@ def most_quiet_flare_time(name):
     elif "21" in name:
         return [25, 27]
     elif "24a" in name:
-        return ValueError()
+        return [28,40]
     elif "22a" in name:
-        return ValueError()
+        return [-23, -19] 
     elif "22" in name:
         return [55,65]
     else:
