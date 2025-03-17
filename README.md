@@ -4,7 +4,6 @@ from a small field of view**
 This code is used for the data analysis of the paper "Integrated full disc Sun-as-a-star flare observations synthesised
 from a small field of view" By Michiel De Wilde, Alexander G.M. Pietrow , Malcolm Keith Druett , and Adur Pastor Yabar
 
-and badly written by Michiel ;)
 
 -----------------------------------------------------------------------------------------------
 
@@ -26,5 +25,3 @@ Schematically what we have done is the following:
 
 When you want to take a look I advise the 2014-09-06 and the 2015-06-24, these are the best structured, 
 and therefore the most easy to understand. 
-
-data/optimal_with is a side project. 
