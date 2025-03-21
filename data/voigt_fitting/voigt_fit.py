@@ -368,7 +368,7 @@ def visualize_analysis(res, voigt, wav, time, name, non_centered=True, with_fram
     # # pcm = ax.pcolormesh(X, Y, Z, cmap='RdBu_r',vmin=-np.max(Z),  shading='auto')
     cb = fig.colorbar(c, ax=ax, extend='both')
     X, Y = np.meshgrid(wav, time)
-    
+
     CS = ax.contour(X, Y, voigt, colors='black', alpha=0.5)
     ax.clabel(CS, inline=True, fontsize=10) 
     ax.set_xlabel(r"Wavelength [$\AA$]")
