@@ -408,7 +408,7 @@ def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar
             vmax = np.percentile(Z, 97)
             vmin = np.percentile(Z, 3)
         else:
-            vmax = max(2-np.percentile(Z, 8), np.percentile(Z, 92))
+            vmax = max(2-np.percentile(Z, 9), np.percentile(Z, 91))
             vmin =2-vmax
             print(f"Centerd contrast plot {vmin=}, {vmax=}.")
         # vmin = np.percentile(Z, 3)
