@@ -5,7 +5,7 @@ import os
 from importlib import reload
 from matplotlib import cm
 import matplotlib.cbook as cbook
-import matplotlib.colors as colors
+import matplotlib.colors as mplcolors
 from scipy.interpolate import interp1d
 from scipy.signal import convolve2d
 
@@ -120,7 +120,7 @@ def most_quiet_flare_time(name):
     elif "23" in name:
         return [55,60]
     elif "16" in name:
-        return [24, 28]
+        return [55, 60]
     elif "21a" in name:
         return [45, 52]    
     elif "21" in name:
@@ -402,20 +402,29 @@ def smooth2(data, n_wav=500, n_time=1, mode='same'):
     return convolve2d(data, kernel, mode=mode)
 
 def ax_contrastplot(fig, ax, X, Y, Z, x, line, decorations={}, seperate_colorbar=True, vlim=None, 
-                    vlimscale=1, logscale=False, xlim=None, cmap='RdBu_r', lambda_0=None):
+                    vlimscale=1, logscale=False, xlim=None, cmap='RdBu_r', lambda_0=None, non_centered=False):
     if vlim is None:   
-        vmin = np.percentile(Z, 2)
-        vmax = np.percentile(Z, 98)
+        if non_centered:
+            vmax = np.percentile(Z, 97)
+            vmin = np.percentile(Z, 3)
+        else:
+            vmax = max(2-np.percentile(Z, 8), np.percentile(Z, 92))
+            vmin =2-vmax
+            print(f"Centerd contrast plot {vmin=}, {vmax=}.")
+        # vmin = np.percentile(Z, 3)
+        # vmax = np.percentile(Z, 97)
     else:
         vmin = 1-vlim
         vmax = vlim+1
         
     if logscale:
-            pcm = ax.pcolormesh(X, Y, Z, cmap=cmap, norm=colors.SymLogNorm(linthresh=0.03, linscale=0.03,
+            pcm = ax.pcolormesh(X, Y, Z, cmap=cmap, norm=mplcolors.SymLogNorm(linthresh=0.03, linscale=0.03,
                                             vmin=vmin, vmax=vmax, base=10), shading='auto')
     else:
-        pcm = ax.pcolormesh(X, Y, Z, cmap=cmap,vmin=vmin, vmax=vmax, shading='auto', label=f'$\Delta I / \sigma$ []')
-
+        # norm = mplcolors.Normalize(vmin=vmin, vmax=vmax)
+        pcm = ax.pcolormesh(X, Y, np.clip(Z, vmin, vmax), vmax=vmax, vmin=vmin, cmap=cmap, shading='auto', label=f'$\Delta I / \sigma$ []') #norm=norm, vmin=vmin, vmax=vmax,
+        # pcm = ax.imshow(np.clip(Z, vmin, vmax), aspect="auto", cmap=cmap, origin='lower', 
+        #                 extent=(np.min(X), np.max(X), np.min(Y), np.max(Y)), vmax=vmax, vmin=vmin) #
     if seperate_colorbar:
         cb = fig.colorbar(pcm, ax=ax, extend='both')#, format=cbformat)
         cb.ax.yaxis.set_offset_position('left')  
