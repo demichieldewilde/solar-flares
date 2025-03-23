@@ -12,9 +12,12 @@ Z. Vashalomidze, A. Vicente Arévalo, R. Yadav, T. V. Zaqarashvili, J. Zbinden, 
 
 Only the observational data is not included for memory and copyright reasons. 
 Some of these data is free available for example for the flares 
+
     -2011-08-06
     -2014-09-06
     -2015-06-24
+
+via (https://dubshen.astro.su.se/sst_archive/observations/281)
 
 For those flare the full analysis thus can be repeated yourself. 
 
