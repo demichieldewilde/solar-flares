@@ -1705,6 +1705,8 @@ def multiline(xs, ys, c, ax=None, **kwargs):
     return lc
 
 def hulp_time(string):
+    if string[0] == 'b':
+        string = string[2:]
     return float(string[:2])*60 + float(string[3:5]) + (float(string[6:8])/60 if len(string)>=8 else 0 )
 
 def time_hulp(float_val):
@@ -2047,6 +2049,11 @@ class fake_theor_line():
         self.spectr_qs = quiet_spect
         self.spectr_fov = quiet_spect
         self.saas_profile = saas_profile
+        
+def no_bytes(string):
+    if str(string)[0] ==  'b':
+        string = f'{string}'[2:-1]
+    return string[:8]
 
 def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show_boundary=False):
     filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_animation.mp4'
@@ -2083,21 +2090,21 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
     limit = derive_intensity_lim(sst_data, 
                                     mins=[np.min(f_nessi_saas(theta)(wav)), np.min(f_nessi_fov(theta)(wav))],
                                     maxs=[np.max(f_nessi_saas(theta)(wav)), np.max(f_nessi_fov(theta)(wav))])
-
+    
     def frame_visualization(sst_data, frame, theta):
         fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(20, 8), gridspec_kw={"width_ratios":[1,1]})
 
         sst_data.ccp_frame(frame,Show=False)
         a=sst_data.current_ccp
 
-        ax[0].set_title(f"spectral line {name_of_line} of {name_of_flare} flare")
+        ax[0].set_title(f"Spectral line {name_of_line} of {name_of_flare} flare")
         sst_data.frame_integrated_spect(frame)
         if 'CaK' in name_of_line:
-            line_sst, = ax[0].plot(sst_data._wavel[:-1]-theta[0], sst_data.av_spect[:-1], '--', label='sst data') 
+            line_sst, = ax[0].plot(sst_data._wavel[:-1]-theta[0], sst_data.av_spect[:-1], '--', label='SST data') 
         else:
-            line_sst, = ax[0].plot(sst_data._wavel-theta[0], sst_data.av_spect, '--', label='sst data')
-        ax[0].plot(wav , f_nessi_fov(theta)(wav), label='nessi FOV')
-        ax[0].plot(wav, f_nessi_saas(theta)(wav), label='nessi full disk')
+            line_sst, = ax[0].plot(sst_data._wavel-theta[0], sst_data.av_spect, '--', label='SST data')
+        ax[0].plot(wav , f_nessi_fov(theta)(wav), label='NESSI FOV')
+        ax[0].plot(wav, f_nessi_saas(theta)(wav), label='NESSI full disk')
         ax[0].legend()
 
         ax[0].set_ylim(limit)
@@ -2109,12 +2116,12 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
         text = ax[1].text(
             -300,
             -20,
-            f"frame: {frame}, {time_hulp(sst_data.TIME[frame])}",
+            f"Frame: {frame}, {no_bytes(sst_data._time[frame])}",
             fontsize=12,
             color='red',
         )
         print(
-            f"frame: {frame}, {sst_data._time[frame]}, total number of frames: {sst_data._number_of_frames} "
+            f"Frame: {frame}, {sst_data._time[frame]}, total number of frames: {sst_data._number_of_frames} "
         )
 
         plt.show()
@@ -2136,10 +2143,9 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
         # f_sst2 = interp1d(sst_data._wavel-theta[0], y, kind='linear', fill_value="extrapolate")
         line_sst.set_data(x, y)
 
-        print(frame, end=" ")
+        print(f'Frame {frame}, time {no_bytes(sst_data._time[frame])}', end="\r")
 
-
-        text.set_text(f"frame: {str(frame)}, {str(sst_data._time[frame])[:8]}")
+        text.set_text(f"Frame: {frame}, {no_bytes(sst_data._time[frame])}")
         # text = ax[1].text(
         #     -300, -20, f"frame: {str(frame)}, {str(sst_data._time[frame])[2:10]}", fontsize=12, color='red'
         # )    
