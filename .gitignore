@@ -4,6 +4,8 @@
 !*.jpg
 !*.png
 !*.pdf
+!*.mp4
+
 
 
 # Exclude .fits, .pdf, and .png files recursively
@@ -18,7 +20,6 @@
 *.doc
 *.icube
 *.zip
-*.mp4
 *.f0
 *.fcube
 *.pro
