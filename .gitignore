@@ -3,13 +3,13 @@
 !*.ipynb
 !*.jpg
 !*.png
+!*.pdf
 
 
 # Exclude .fits, .pdf, and .png files recursively
 *.fits
 *.csv
 *.fts
-*.pdf
 *.idlsave
 *.npy
 *.npz
