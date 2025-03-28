@@ -7,10 +7,11 @@ J. Koza, O. Andriienko, A. R. Brunvoll, J. de la Cruz Rodríguez, J. T. Faber, R
 D. Nóbrega-Siverio, L. H. M. Rouppe van der Voort, J. Rybák, E. Scullion, A. M. Silva,
 Z. Vashalomidze, A. Vicente Arévalo, R. Yadav, T. V. Zaqarashvili, J. Zbinden, and E. S. Øyre
 
+Videos of the observations dicussed in the paper can be found under data/animations. 
 
 -----------------------------------------------------------------------------------------------
 
-Only the observational data is not included for memory and copyright reasons. 
+The raw observational data is not included for memory and copyright reasons. 
 Some of these data is free available for example for the flares 
 
     -2011-08-06
@@ -31,3 +32,5 @@ Schematically what we have done is the following:
 
 When you want to take a look I advise the 2014-09-06 and the 2015-06-24, these are the best structured, 
 and therefore the most easy to understand. 
+
+
