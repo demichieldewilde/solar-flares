@@ -1907,9 +1907,14 @@ def save_for_further_analysis(sst_data, theor_line):
 
 def load_for_further_analysis(names_of_lines, full_path=None):
     if full_path is None:
-        full_path = get_full_path(names_of_lines[0])
+        individual=True
+    else:
+        individual = False
     data = {}
     for name in names_of_lines:
+        if individual:
+            full_path = get_full_path(name)
+
         # areafactor and theta to adjust
         data[f'area_theta_{name}'] = np.load(get_file_path_line_data(f"area_theta_{name}", full_path=full_path))
 
