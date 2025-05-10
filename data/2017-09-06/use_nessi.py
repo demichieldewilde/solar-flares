@@ -2060,6 +2060,11 @@ def no_bytes(string):
         string = f'{string}'[2:-1]
     return string[:8]
 
+# Corrections:
+# 1) FOV integrated spectrum (what you call sst data now)
+# 2) quiet Sun (full disk) 
+# 3) disk integrated. 
+#     1 and 3 should both move with time.
 def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show_boundary=False):
     filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_animation.mp4'
     import matplotlib.animation as animation
@@ -2105,11 +2110,11 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
         ax[0].set_title(f"Spectral line {name_of_line} of {name_of_flare} flare")
         sst_data.frame_integrated_spect(frame)
         if 'CaK' in name_of_line:
-            line_sst, = ax[0].plot(sst_data._wavel[:-1]-theta[0], sst_data.av_spect[:-1], '--', label='SST data') 
+            line_sst, = ax[0].plot(sst_data._wavel[:-1]-theta[0], sst_data.av_spect[:-1], '--', label='FOV integrated spectrum') 
         else:
-            line_sst, = ax[0].plot(sst_data._wavel-theta[0], sst_data.av_spect, '--', label='SST data')
-        ax[0].plot(wav , f_nessi_fov(theta)(wav), label='NESSI FOV')
-        ax[0].plot(wav, f_nessi_saas(theta)(wav), label='NESSI full disk')
+            line_sst, = ax[0].plot(sst_data._wavel-theta[0], sst_data.av_spect, '--', label='FOV integrated spectrum')
+        ax[0].plot(wav , f_nessi_fov(theta)(wav), label='NESSI FOV') # change line to quiet sun full disk
+        ax[0].plot(wav, f_nessi_saas(theta)(wav), label='NESSI full disk') # change line to composistion of saas
         ax[0].legend()
 
         ax[0].set_ylim(limit)
