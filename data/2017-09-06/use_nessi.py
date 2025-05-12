@@ -2177,7 +2177,7 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
 
     # call the animator.  blit=True means only re-draw the parts that have changed.
     anim = animation.FuncAnimation(fig, animate,
-                                frames=(sst_data._number_of_frames-1) // step, interval=500) 
+                                frames=(sst_data._number_of_frames) // step, interval=500) 
 
     # save the animation as an mp4.  This requires ffmpeg or mencoder to be
     # installed.  The extra_args ensure that the x264 codec is used, so that
