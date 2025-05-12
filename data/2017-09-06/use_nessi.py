@@ -2087,29 +2087,28 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
     if theor_line is None:
         theor_line = fake_theor_line(sst_data._wavel , sst_data.quiet_spect, sst_data.atlas_saas_profile / theta[2])
         theta = [0, 1, 1]
-
-    f_nessi_qs = lambda theta: interp1d(theor_line.sst_wav , theta[1] * theor_line.spectr_qs 
-                                    , kind='linear', fill_value="extrapolate")
-    f_nessi_fov = lambda theta: interp1d(theor_line.sst_wav , theta[1] * theor_line.spectr_fov 
-                                    , kind='linear', fill_value="extrapolate")
-    f_nessi_saas = lambda theta: interp1d(theor_line.sst_wav , theta[1] * theor_line.saas_profile 
-                                    , kind='linear', fill_value="extrapolate")
-    if 'CaK' in name_of_line:
-        f_integrated_fov = lambda theta: interp1d(sst_data._wavel[:-1]-theta[0], sst_data.av_spect[:-1]
-                                    , kind='linear', fill_value="extrapolate")
-    else:
-        f_integrated_fov = lambda theta: interp1d(sst_data._wavel-theta[0], sst_data.av_spect
-                                    , kind='linear', fill_value="extrapolate")
-    f_nessi_composed = lambda theta: f_nessi_saas(theta) + a_factor * (f_integrated_fov(theta) - f_nessi_fov(theta))
-
+        
     wav = merge_wavelengths(sst_data._wavel - theta[0], theor_line.sst_wav)
     if "CaK" in name_of_line:
         wav = wav[:-1]
 
+    # f_nessi_qs = interp1d(theor_line.sst_wav , theta[1] * theor_line.spectr_qs 
+    #                                 , kind='linear', fill_value="extrapolate")(wav)
+    f_nessi_fov =  interp1d(theor_line.sst_wav , theta[1] * theor_line.spectr_fov 
+                                    , kind='linear', fill_value="extrapolate")(wav)
+    f_nessi_saas =  interp1d(theor_line.sst_wav , theta[1] * theor_line.saas_profile 
+                                    , kind='linear', fill_value="extrapolate")(wav)
+    if 'CaK' in name_of_line:
+        f_integrated_fov = interp1d(sst_data._wavel[:-1]-theta[0], sst_data.av_spect[:-1]
+                                    , kind='linear', fill_value="extrapolate")(wav)
+    else:
+        f_integrated_fov =  interp1d(sst_data._wavel-theta[0], sst_data.av_spect
+                                    , kind='linear', fill_value="extrapolate")(wav)
+    f_nessi_composed = f_nessi_saas + a_factor * (f_integrated_fov - f_nessi_fov)
 
     limit = derive_intensity_lim(sst_data, 
-                                    mins=[np.min(f_nessi_saas(theta)(wav)), np.min(f_nessi_fov(theta)(wav))],
-                                    maxs=[np.max(f_nessi_saas(theta)(wav)), np.max(f_nessi_fov(theta)(wav))])
+                                    mins=[np.min(f_nessi_saas), np.min(f_nessi_fov)],
+                                    maxs=[np.max(f_nessi_saas), np.max(f_nessi_fov)])
     
     def frame_visualization(sst_data, frame, theta):
         fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(20, 8), gridspec_kw={"width_ratios":[1,1]})
@@ -2119,10 +2118,10 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
 
         ax[0].set_title(f"Spectral line {name_of_line} of {name_of_flare} flare")
         sst_data.frame_integrated_spect(frame)
-        line_sst, = ax[0].plot(wav, f_integrated_fov(theta)(wav), '--', label='FOV integrated spectrum') 
-        line_composed, = ax[0].plot(wav, f_nessi_composed(theta)(wav), '--', label='Disk integrated spectrum') 
-        ax[0].plot(wav , f_nessi_fov(theta)(wav), label='Quiet Sun (FOV)') # change line to quiet sun full disk
-        ax[0].plot(wav, f_nessi_saas(theta)(wav), label='Quiet Sun (Full Disk)') # change line to composistion of saas
+        ax[0].plot(wav , f_nessi_fov, label='Quiet Sun (FOV)') # change line to quiet sun full disk
+        ax[0].plot(wav, f_nessi_saas, label='Quiet Sun (Full Disk)') # change line to composistion of saas
+        line_sst, = ax[0].plot(wav, f_integrated_fov, '--', label='FOV integrated spectrum') 
+        line_composed, = ax[0].plot(wav, f_nessi_composed, '--', label='Disk integrated spectrum') 
         ax[0].legend()
 
         ax[0].set_ylim(limit)
@@ -2131,10 +2130,10 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
         if show_boundary:
             ax[1].imshow(Image.fromarray(sst_data.boundary[::-1,:]), alpha=0.3)
         ax[1].set_title("COCOplot")
-        text = ax[1].text(
-            -300,
-            -20,
-            f"Frame: {frame}, {no_bytes(sst_data._time[frame])}",
+        text = fig.text(
+            0.5,
+            0.05,
+            f"Frame: {frame}, Time: {no_bytes(sst_data._time[frame])}",
             fontsize=12,
             color='red',
         )
@@ -2146,9 +2145,6 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
 
         return fig, line_sst,  im, text, line_composed
 
-
-
-
     fig, line_sst, im, text, line_composed = frame_visualization(sst_data, frame, theta)
 
     # animation function.  This is called sequentially
@@ -2159,8 +2155,13 @@ def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show
         # x = sst_data._wavel-theta[0]
         y = sst_data.frame_integrated_spect(frame)
         # f_sst2 = interp1d(sst_data._wavel-theta[0], y, kind='linear', fill_value="extrapolate")
-        line_sst.set_data(wav, f_integrated_fov(theta)(wav))
-        line_composed.set_data(wav, f_nessi_composed(theta)(wav))
+        if 'CaK' in name_of_line:
+            f_integrated_fov = interp1d(sst_data._wavel[:-1]-theta[0], sst_data.av_spect[:-1], kind='linear', fill_value="extrapolate")(wav)
+        else:
+            f_integrated_fov =  interp1d(sst_data._wavel-theta[0], sst_data.av_spect, kind='linear', fill_value="extrapolate")(wav)
+        f_nessi_composed = f_nessi_saas + a_factor * (f_integrated_fov - f_nessi_fov)
+        line_sst.set_data(wav, f_integrated_fov)
+        line_composed.set_data(wav, f_nessi_composed)
 
         print(f'Frame {frame}, time {no_bytes(sst_data._time[frame])}', end="\r")
 
