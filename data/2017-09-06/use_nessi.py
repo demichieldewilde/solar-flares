@@ -739,7 +739,7 @@ class SST_data():
     
     def calculate_boundary(self, for_all_frame=False, exclude_wav=[], frame = 0):
         
-        if np.isnan(self.zeros[0][0]):
+        if np.any(np.isnan(self.zeros)):
             print('found NAN')
             return np.where(np.isnan(self.datacube[frame,0,0,:,:]), 0, 1)
 
@@ -1198,7 +1198,7 @@ def give_mu_contourplot(filename, timeFrame=0, over=None, shift=(0,0), save=Fals
 
     fig, ax = plt.subplots()
     if over is not None:
-        over.frame_integrated_spect(timeFrame)
+        over.ccp_frame(timeFrame)
         print(extent)
         ax.imshow(Image.fromarray(over.current_ccp), origin='lower', extent=extent)
         av_mu = np.average(MU, weights=over.boundary)
