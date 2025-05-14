@@ -739,9 +739,12 @@ class SST_data_from_multiple_fits_files():
         return tstr
 
     def ccp_frame(self, frame, Show=True):
+        #coarse graining for memory reasons
+        sx = 1 if (self.shape[3] < 1900) else self.shape[3] // 1000
+        sy = 1 if (self.shape[4] < 1900) else self.shape[4] // 1000
         # Now view a datacube
         self.current_frame=frame
-        cube = np.nan_to_num(self.datacube(frame))
+        cube = np.nan_to_num(self.datacube(frame)[:,::sx,::sy])
         cube[np.where(cube > self._thresh[1])] =self._thresh[1]
         cube[np.where(cube <self._thresh[0])] =self._thresh[0]
         tstr = self.time_of_frame(frame)
