@@ -740,8 +740,8 @@ class SST_data_from_multiple_fits_files():
 
     def ccp_frame(self, frame, Show=True):
         #coarse graining for memory reasons
-        sx = 1 if (self.shape[3] < 1900) else self.shape[3] // 1000
-        sy = 1 if (self.shape[4] < 1900) else self.shape[4] // 1000
+        sx = 1 if (self.shape[3] < 2100) else self.shape[3] // 1000
+        sy = 1 if (self.shape[4] < 2100) else self.shape[4] // 1000
         # Now view a datacube
         self.current_frame=frame
         cube = np.nan_to_num(self.datacube(frame)[:,::sx,::sy])
