@@ -28,5 +28,7 @@
 **/onnutig/
 __pycache__/
 **/FOV/*
-literature_review/*
+literature_review/
+.ipynb_checkpoints/
+.vscode/
 
