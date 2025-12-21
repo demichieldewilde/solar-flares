@@ -7,11 +7,11 @@ import matplotlib.colors as mcolors
 from astropy.io import fits as f
 from scipy.interpolate import interp1d
 import copy
-import sunpy
+# import sunpy
 import cocopy as cp
 # from ISPy.io 
 import solarnet # very use full to get time and to get spectral and coordinate positions
-import sunpy.map
+# import sunpy.map
 import astropy.units as u
 from scipy.io import readsav as rs
 from PIL import Image, ImageEnhance
@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.collections import PolyCollection
 import os
+diskport = "D:"
 
 
 class linestudier():
@@ -47,7 +48,7 @@ class linestudier():
         self.neglect_atlas = neglect_atlas
         if not neglect_atlas:
             if atlas is None:
-                self.atlas = f.getdata(get_file_path_fits("E:/solar flares/data/2017-09-06/fits/solar_atlas_V1_405-1065.fits"))
+                self.atlas = f.getdata(get_file_path_fits(f"{diskport}/solar flares/data/2017-09-06/fits/solar_atlas_V1_405-1065.fits"))
             else:
                 self.atlas = atlas
             atlas_w = np.arange(len(self.atlas)) * -0.003766534468 + 24700.0858041
@@ -783,7 +784,7 @@ class SST_data_from_multiple_fits_files():
             ax.set_xlim(self.line_lim)
         ax.set_xlabel(r"wavelength [$\rm\AA$]")
         ax.set_ylabel("intensity [units???]")
-        if numb<6:
+        if numb<9:
             ax.legend(fontsize=6)
         plt.show()
 

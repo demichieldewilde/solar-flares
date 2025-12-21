@@ -7,10 +7,10 @@ import matplotlib.colors as mcolors
 from astropy.io import fits as f
 from scipy.interpolate import interp1d
 import copy
-import sunpy
+# import sunpy
 import cocopy as cp
 import solarnet # very use full to get time and to get spectral and coordinate positions
-import sunpy.map
+# import sunpy.map
 import astropy.units as u
 from scipy.io import readsav as rs
 from PIL import Image, ImageEnhance
@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.collections import PolyCollection
 import os
+diskport = "D:"
 
 
 class linestudier():
@@ -1989,41 +1990,41 @@ def get_full_path(name):
         name = name[0]
         
     if '19' in name:
-        return "E:\solar flares\data\\2019-05-06"
+        return f"{diskport}\solar flares\data\\2019-05-06"
     elif '17a' in name:
-        return "E:/solar flares/data/2017-09-10" 
+        return f"{diskport}/solar flares/data/2017-09-10" 
     elif "13" in name:
-        return "E:\solar flares\data\\2013-06-30"
+        return f"{diskport}\solar flares\data\\2013-06-30"
     elif "15a" in name:
-        return "E:\solar flares\data\\2015-09-27" 
+        return f"{diskport}\solar flares\data\\2015-09-27" 
     elif "15b" in name:
-        return "E:\solar flares\data\\2015-05-05" 
+        return f"{diskport}\solar flares\data\\2015-05-05" 
     elif "15" in name:
-        return "E:\solar flares\data\\2015-06-24" 
+        return f"{diskport}\solar flares\data\\2015-06-24" 
     elif "14a" in name:
-        return "E:\solar flares\data\\2014-09-06"
+        return f"{diskport}\solar flares\data\\2014-09-06"
     elif "14" in name:
-        return "E:\solar flares\data\\2014-06-10"
+        return f"{diskport}\solar flares\data\\2014-06-10"
     elif "23a" in name:
-        return "E:\solar flares\data\\2023-06-18"
+        return f"{diskport}\solar flares\data\\2023-06-18"
     elif "23" in name:
-        return "E:\solar flares\data\\2023-06-09"    
+        return f"{diskport}\solar flares\data\\2023-06-09"    
     elif "16" in name:
-        return "E:\solar flares\data\\2016-05-14"
+        return f"{diskport}\solar flares\data\\2016-05-14"
     elif "21a" in name:
-        return "E:\solar flares\data\\2021-10-28"
+        return f"{diskport}\solar flares\data\\2021-10-28"
     elif "21" in name:
-        return "E:\solar flares\data\\2021-05-26"
+        return f"{diskport}\solar flares\data\\2021-05-26"
     elif "24a" in name:
-        return "E:\solar flares\data\\2024-09-11"
+        return f"{diskport}\solar flares\data\\2024-09-11"
     elif "22a" in name:
-        return "E:\solar flares\data\\2022-06-26"
+        return f"{diskport}\solar flares\data\\2022-06-26"
     elif "22" in name:
-        return "E:\solar flares\data\\2022-05-20"
+        return f"{diskport}\solar flares\data\\2022-05-20"
     elif "24" in name:
-        return "E:\solar flares\data\\2024-06-03"
+        return f"{diskport}\solar flares\data\\2024-06-03"
     elif '17' in name:
-        return "E:/solar flares/data/2017-09-06" 
+        return f"{diskport}/solar flares/data/2017-09-06" 
     else:
         raise FileNotFoundError(f'For the profided name {name} no full path was defined.')
 
@@ -2067,7 +2068,7 @@ def no_bytes(string):
 # 4) quiet sun (FOV)
 #     1 and 3 should both move with time.
 def Movie_making(theor_line, sst_data, name_of_flare, name_of_line, step=1, show_boundary=False):
-    filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_animation.mp4'
+    filename = f'{diskport}/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_animation.mp4'
 
     if os.path.isfile(filename):
         print(f"The filename {filename} already exist")
@@ -2210,7 +2211,7 @@ def Difference_Movie(theor_line, sst_data, name_of_flare, name_of_line, step=1, 
     
     frame_offset = get_frame_offset_from_time_offset(sst_data, frame_offset, time_offset)
     
-    filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_diff_animation.mp4'
+    filename = f'{diskport}/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_diff_animation.mp4'
 
     if os.path.isfile(filename):
         print(f"The filename {filename} already exists")
@@ -2317,7 +2318,7 @@ def Difference_Movie_gray(theor_line, sst_data, name_of_flare, name_of_line, wav
     
     frame_offset = get_frame_offset_from_time_offset(sst_data, frame_offset, time_offset)
     
-    filename = f'E:/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_diff_{wavelength}_animation.mp4'
+    filename = f'{diskport}/solar flares/data/animations/{name_of_flare.replace(".", "")}_{name_of_line}_diff_{wavelength}_animation.mp4'
 
     if os.path.isfile(filename) and only_frame is None:
         print(f"The filename {filename} already exists")
