@@ -1,18 +1,25 @@
 **Integrated full disc Sun-as-a-star flare observations synthesised
 from a small field of view**
 
-This code is used for the data analysis of the paper "Integrated full disc Sun-as-a-star flare observations synthesised
+This repo accompanies the paper "Integrated full disc Sun-as-a-star flare observations synthesised
 from a small field of view" By M. De Wilde, A. G.M. Pietrow , M. k. Druett , A. P. Yabar, 
 J. Koza, O. Andriienko, A. R. Brunvoll, J. de la Cruz Rodríguez, J. T. Faber, R. Joshi, D. Kuridze,
 D. Nóbrega-Siverio, L. H. M. Rouppe van der Voort, J. Rybák, E. Scullion, A. M. Silva,
 Z. Vashalomidze, A. Vicente Arévalo, R. Yadav, T. V. Zaqarashvili, J. Zbinden, and E. S. Øyre
 
-Videos of the observations dicussed in the paper can be found under data/animations. 
+The code for all data analysis can be found in the data folder which is structured to have an 
+individual folder extracting data in a uniform format for each event, and then a folder per 
+stage of the data analysis (voight fitting, analysis of each event in folder full analysis, 
+and scale law). 
+
+The Figures used in the paper are assembled in Figures.
+
+The videos of the observations dicussed in the paper can be found in animations. 
 
 -----------------------------------------------------------------------------------------------
 
 The raw observational data is not included for memory and copyright reasons. 
-Some of these data is free available for example for the flares 
+Some of these data is freely available for example for the flares 
 
     -2011-08-06
     -2014-09-06
@@ -20,7 +27,7 @@ Some of these data is free available for example for the flares
 
 via (https://dubshen.astro.su.se/sst_archive/observations/281)
 
-For those flare the full analysis thus can be repeated yourself. 
+For those flare the full analysis can be repeated yourself. 
 
 Schematically what we have done is the following:
 
